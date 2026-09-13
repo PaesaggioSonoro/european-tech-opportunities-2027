@@ -5,23 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://opportunities2027.simonesiega.com/">Directory</a> ·
-  <a href="#run-locally">Run locally</a> ·
+  <a href="#latest-internships">Internships</a> ·
+  <a href="#latest-new-grad-opportunities">New Grad</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
-</p>
-
-<!-- BEGIN OPPORTUNITY COUNTS -->
-<p align="center">
-  <strong>Last updated: September 13, 2026 at 11:01 UTC</strong><br>
-  <img src="https://img.shields.io/badge/Total%20opportunities-692-2563eb?style=for-the-badge" alt="Total opportunities: 692" />
-  <img src="https://img.shields.io/badge/Internships-314-16a34a?style=for-the-badge" alt="Internships: 314" />
-  <img src="https://img.shields.io/badge/New%20Grad-378-9333ea?style=for-the-badge" alt="New Grad opportunities: 378" />
-</p>
-<!-- END OPPORTUNITY COUNTS -->
-
-<p align="center">
-  <a href="https://opportunities2027.simonesiega.com/"><strong>Open the searchable opportunity directory →</strong></a>
 </p>
 
 <p align="center">
@@ -41,11 +28,18 @@
   </a>
 </p>
 
-## Overview
+<!-- BEGIN OPPORTUNITY COUNTS -->
+<p align="center">
+  <strong>Last updated: September 13, 2026 at 11:01 UTC</strong><br>
+  <img src="https://img.shields.io/badge/Total%20opportunities-692-2563eb?style=for-the-badge" alt="Total opportunities: 692" />
+  <img src="https://img.shields.io/badge/Internships-314-16a34a?style=for-the-badge" alt="Internships: 314" />
+  <img src="https://img.shields.io/badge/New%20Grad-378-9333ea?style=for-the-badge" alt="New Grad opportunities: 378" />
+</p>
+<!-- END OPPORTUNITY COUNTS -->
 
-European Tech Opportunities 2027 is an open-source data product that combines a searchable public directory with an automated collection, classification, and lifecycle pipeline. It removes common job-search noise—mixed hiring cycles, senior roles, unrelated positions, and unsupported locations—by publishing only listings that pass deterministic checks.
-
-The project intentionally favors precision over coverage. Relevant listings may be absent when they fall outside the configured searches or do not provide enough evidence to satisfy every publication rule.
+<p align="center">
+  <a href="https://opportunities2027.simonesiega.com/"><strong>Open the searchable opportunity directory →</strong></a>
+</p>
 
 ## Website preview
 
@@ -64,9 +58,15 @@ The project intentionally favors precision over coverage. Relevant listings may 
 
 The public directory has surpassed **1,000 unique visitors since launch**. It is the primary user interface, with full-text search; Internship and New Grad filtering; company, country, and category filters; sorting; pagination; light and dark themes; and direct links to the original listings.
 
+## Overview
+
+European Tech Opportunities 2027 is an open-source data product that combines a searchable public directory with an automated collection, classification, and lifecycle pipeline. It removes common job-search noise, including mixed hiring cycles, senior roles, unrelated positions, and unsupported locations, by publishing only listings that pass deterministic checks.
+
+The project intentionally favors precision over coverage. Relevant listings may be absent when they fall outside the configured searches or do not provide enough evidence to satisfy every publication rule.
+
 ## Opportunity directory
 
-Browse the complete live collection at **[opportunities2027.simonesiega.com](https://opportunities2027.simonesiega.com/)**. The repository keeps only the five most recently posted opportunities of each employment type as a lightweight preview; use the website for the complete searchable collection.
+Browse the complete live collection at **[opportunities2027.simonesiega.com](https://opportunities2027.simonesiega.com/)**. The repository keeps up to five of the most recently posted opportunities for each employment type as a lightweight preview; use the website for the complete searchable collection.
 
 <!-- BEGIN OPPORTUNITIES -->
 **Open opportunities:** 692 (Internships: 314 · New Grad: 378)<br>
@@ -110,9 +110,9 @@ A listing is published only when all six checks pass:
 | Check | Required evidence |
 |---|---|
 | Employment type | The title explicitly identifies either an internship (including placement or co-op) or a New Grad role. Internship terminology takes precedence if both appear. |
-| Posting date | LinkedIn’s relative posting age resolves to May 1, 2026 or later; missing or older posting metadata is excluded for new listings. |
+| Posting date | For a listing without an explicit cycle year, LinkedIn’s relative posting age must resolve to May 1, 2026 or later. An explicit `2027` listing does not require posting-age metadata. |
 | Seniority | The title contains no configured senior-level or management terminology. |
-| 2027 cycle | Explicit `2027` evidence is accepted; an otherwise eligible listing with no explicit cycle year is accepted when posted on or after May 1, 2026, while any explicit conflicting cycle year—including 2025 or 2026—is rejected. Graduation-year eligibility alone is ignored for internships. |
+| 2027 cycle | Explicit `2027` evidence is accepted; an otherwise eligible listing with no explicit cycle year is accepted when posted on or after May 1, 2026, while any explicit conflicting cycle year, including 2025 or 2026, is rejected. Graduation-year eligibility alone is ignored for internships. |
 | Technology role | The title, or a narrowly allowed description fallback, matches a configured technology category. |
 | European location | The parsed location explicitly resolves to Europe or a supported European country. |
 
@@ -124,7 +124,7 @@ Ambiguous evidence is excluded rather than guessed. Search-page absence never cl
 - **Deterministic classification:** explicit rules assign `internship` or `new-grad`, then verify posting recency, cycle, technology category, seniority, and European location.
 - **Transactional lifecycle state:** SQLite persistence records provenance, first/last-seen timestamps, isolated search outcomes, conservative closure evidence, and daily full-state availability checks.
 - **Tested web application:** query-parameter-backed filtering, sortable and paginated results, unit tests, Playwright end-to-end coverage, TypeScript checks, and production-build validation.
-- **Production engineering:** Alembic migrations, scheduled automation, restore-verified timestamped backups, atomic deployment, strict typing, CI across Python/site/containers, thresholded branch coverage, and parsing/classification benchmarks.
+- **Production engineering:** Alembic migrations, scheduled automation, restore-verified timestamped backups, atomic deployment, strict typing, CI across Python/site/containers, thresholded combined statement-and-branch coverage, and parsing/classification benchmarks.
 
 ### Python quality baseline
 
@@ -212,7 +212,7 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Partici
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+Original project code and documentation are licensed under the [MIT License](LICENSE) unless a file or third-party asset states otherwise. [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) preserves its Contributor Covenant attribution, and third-party source-site screenshots or other third-party material remain subject to their respective terms rather than being relicensed by the project MIT License.
 
 ## Contributors
 

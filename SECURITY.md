@@ -1,226 +1,143 @@
 # Security Policy
 
-Responsible disclosure and security boundaries for European Tech Opportunities 2027.
+[← Project README](README.md) · [Contributing](CONTRIBUTING.md) · [Documentation hub](docs/README.md)
 
-## Contents
-
-- [Supported versions](#supported-versions)
-- [Reporting a vulnerability](#reporting-a-vulnerability)
-- [What to expect](#what-to-expect)
-- [Security model](#security-model)
-- [What to report](#what-to-report)
-- [Usually not a security vulnerability](#usually-not-a-security-vulnerability)
-- [Secret handling](#secret-handling)
-- [Dependency and release security](#dependency-and-release-security)
-- [Responsible disclosure](#responsible-disclosure)
-
-## Supported versions
-
-Security fixes are developed against `main` and, when practical, applied to the latest published release.
-
-| Version | Support |
-|---|---|
-| `main` | Supported for unreleased fixes |
-| Latest published release | Supported |
-| Older releases and commits | Best effort only |
+Security reporting, supported versions, and operating boundaries for European Tech Opportunities 2027.
 
 ## Reporting a vulnerability
 
-Do not open a public issue, discussion, or pull request containing vulnerability details.
-
-Report privately through either channel:
+Do not disclose security vulnerabilities in a public issue, discussion, pull request, or listing suggestion.
 
 | Channel | Contact |
 |---|---|
 | GitHub private vulnerability reporting | [Open a private security advisory](https://github.com/simonesiega/european-tech-opportunities-2027/security/advisories/new) |
 | Email | [simonesiega1@gmail.com](mailto:simonesiega1@gmail.com) |
 
-Suggested email subject:
+For email reports, use the subject `[SECURITY] Brief vulnerability summary`.
 
-```text
-[SECURITY] Brief vulnerability summary
-```
+Please include:
 
-A useful report includes:
+- a concise summary and potential impact;
+- the affected command, workflow, website surface, or trust boundary;
+- a minimal deterministic reproduction using synthetic or redacted data;
+- required configuration, permissions, and attacker access;
+- OS, runtime, project version or commit, and execution path;
+- a suggested mitigation, if available.
 
-| Field | Details |
-|---|---|
-| Summary | Concise description of the issue |
-| Impact | Affected data, command, workflow, website surface, or trust boundary |
-| Reproduction | Minimal deterministic steps using synthetic or redacted data |
-| Environment | OS, runtime version, project version or commit, and execution path |
-| Preconditions | Required configuration, permissions, and attacker access |
-| Suggested mitigation | Optional safe fix or design recommendation |
+Do not send credentials, cookies, sessions, private HTML, complete environment files, production databases, SQLite sidecars, or unredacted private paths and headers.
 
-Do not send real credentials, cookies, account sessions, private HTML, unredacted environment files, production databases, or SQLite sidecars. Redact local paths, query strings, identifiers, and headers unless they are essential to understanding the issue.
+### What to expect
 
-## What to expect
+The maintainer will make a reasonable effort to acknowledge complete reports, reproduce the issue, assess affected versions, coordinate a fix and regression tests, and agree on disclosure timing.
 
-The maintainer will make a reasonable effort to:
+Response time depends on severity and reproducibility; no service-level agreement is provided. Avoid public disclosure until remediation or coordinated disclosure.
 
-1. acknowledge complete reports;
-2. investigate and reproduce the issue;
-3. assess impact and affected versions;
-4. coordinate remediation and regression tests;
-5. agree on disclosure timing before publication.
+## Supported versions
 
-Response and remediation times depend on severity, reproducibility, and maintainer availability. No fixed service-level agreement is provided.
+Security fixes target `main` and, when practical, the latest published release. Older releases and commits receive best-effort support only.
 
-Avoid public disclosure until a fix is available or disclosure has been coordinated.
-
-## Security model
-
-The supported system is deliberately narrow:
-
-<div align="center">
-<pre>
-permission-gated LinkedIn guest HTML
-↓
-bounded local parsing and classification
-↓
-canonical SQLite lifecycle state
-↓
-read-only website + bounded README preview
-</pre>
-</div>
-
-### Core security boundaries
+## Security boundaries
 
 | Surface | Security contract |
 |---|---|
-| Source access | Public LinkedIn guest HTML only, and only after the authorization gate |
-| Authentication | No LinkedIn credentials, sessions, cookies, or account tokens |
-| Transport | Fixed HTTPS endpoints, disabled redirects, bounded pacing, concurrency, retries, timeouts, and response sizes |
-| Processing | Local deterministic parsing and classification; sanitized errors without response-body logging |
-| Persistence | SQLite is canonical; writes use controlled repository transactions and migrations |
-| Website | Read-only SQLite access; no lifecycle mutation API |
-| README | Bounded generated projection written through atomic replacement |
-| Automation | Offline validation CI remains separate from permission-gated collection; restricted VPS snapshots are checksum- and restore-verified |
-| Containers | Unprivileged processes and explicit mounts do not expand source authorization |
+| Source access | Authorized public LinkedIn guest HTML only |
+| Authentication | No LinkedIn credentials, sessions, cookies, account tokens, or browser storage |
+| Transport | Fixed HTTPS hosts, disabled redirects, and bounded pacing, concurrency, retries, timeouts, and response sizes |
+| Processing | Local deterministic parsing and classification with sanitized errors |
+| Persistence | Canonical SQLite writes through repository transactions and Alembic migrations |
+| Website | Read-only SQLite, validated links, no mutation API, and defensive production headers |
+| README | Bounded generated projection with atomic replacement |
+| Automation | Offline validation separated from authorized collection, with verified durable snapshots and atomic deployment |
+| Containers | Unprivileged processes, explicit mounts, pinned images, and reduced runtime tooling |
 
-The detailed runtime behavior is documented in the [architecture](docs/guides/development/architecture.md), [configuration](docs/guides/getting-started/configuration.md), [database](docs/guides/operations/database.md), [automation](docs/guides/operations/automation.md), and [Docker](docs/guides/operations/docker.md) guides.
+Detailed behavior is documented in [Architecture](docs/guides/development/architecture.md), [Configuration](docs/guides/getting-started/configuration.md), [Database](docs/guides/operations/database.md), [Automation](docs/guides/operations/automation.md), and [Docker](docs/guides/operations/docker.md).
 
-### Source-access boundary
+### Collection boundary
 
-The project does not require, accept, or implement:
+LinkedIn requests remain blocked unless the relevant authorization interlock is enabled. The interlock records an operator decision; it does not grant permission.
 
-- LinkedIn usernames or passwords;
-- session cookies, browser storage, authentication headers, or account tokens;
+Operators must obtain and retain express authorization and follow applicable policies, terms, laws, and project limits.
+
+The project does not implement or accept:
+
+- LinkedIn credentials, sessions, cookies, authentication headers, or account tokens;
 - logged-in or browser-based collection;
-- CAPTCHA solving or challenge bypass;
-- private or internal LinkedIn APIs;
-- proxy rotation, fingerprint evasion, or anti-bot bypasses;
+- CAPTCHA solving, challenge bypass, proxy rotation, or fingerprint evasion;
+- private or internal APIs;
 - redirect-based endpoint discovery;
 - collection from unrelated providers.
 
-LinkedIn requests are blocked unless the appropriate authorization interlock is enabled.
-
-> [!IMPORTANT]
-> An authorization variable is an operator safety interlock, not permission. Operators are responsible for obtaining and retaining express authorization and for complying with applicable policies, terms, laws, and collection limits.
-
-Do not remove, weaken, bypass, or silently default an authorization gate to true.
-
-An upstream block or challenge is a stop condition, not a problem to evade.
+Never weaken or default-enable an authorization gate. An upstream block or challenge is a stop condition.
 
 ### Data and website boundary
 
-`data/opportunities.db` contains public listing metadata plus operational lifecycle history. It should never contain credentials, sessions, or authenticated HTML, but it is still sensitive operational state.
+`data/opportunities.db` contains public listing metadata and sensitive operational history. It must never contain credentials, sessions, or authenticated HTML.
 
-The website must remain a read-only projection:
+The website must not:
 
-- it must not run migrations or collection commands;
-- it must not insert, update, close, or reopen jobs;
-- it must not expose database paths, environment values, stack traces, or server configuration;
-- database values must not be rendered as untrusted raw HTML;
-- external listing links must remain validated public HTTPS URLs.
+- run collection, migrations, or lifecycle writes;
+- expose mutation endpoints;
+- expose database paths, environment values, stack traces, or server configuration;
+- render database values as untrusted raw HTML;
+- emit external links outside validated public HTTPS listing URLs.
 
-Changes that add authentication, forms, user-provided content, write APIs, saved application data, or administrative mutation paths expand the trust boundary and require explicit architecture and security review.
+Authentication, forms, user content, saved applications, write APIs, or administration interfaces require explicit architecture and security review.
 
 ## What to report
 
-Relevant security reports include:
+Report issues that could:
 
-- bypassing or default-enabling an authorization gate;
-- credentials, cookies, environment values, private paths, or secrets exposed in output or logs;
-- unexpected requests to another host or unsafe redirect behavior;
-- unbounded retries, concurrency, response reads, query sizes, or filesystem writes;
-- malicious source HTML causing code execution, arbitrary file access, or unsafe output injection;
-- Markdown injection escaping either generated opportunity table;
-- SQL injection or unsafe dynamic SQL;
-- path traversal through configuration or temporary-file handling;
-- failed searches incorrectly mutating or closing jobs;
-- migrations corrupting or silently discarding canonical state;
-- workflows publishing `.env`, SQLite state, credentials, or sensitive artifacts unexpectedly;
-- unsafe VPS snapshot, artifact, cache, backup, or deployment access controls;
-- dependency, workflow, or container compromise affecting a supported execution path;
-- stored or reflected script injection in the website;
-- unsafe rendering of listing fields;
-- external links being rewritten to unsafe schemes or destinations;
-- the website writing to SQLite or exposing local database contents;
-- server failures revealing environment variables, filesystem paths, or internal configuration.
+- bypass source authorization or request bounds;
+- expose credentials, private state, paths, headers, or environment values;
+- request unexpected hosts or follow unsafe redirects;
+- cause code execution, injection, path traversal, arbitrary file access, or unsafe filesystem writes;
+- let malformed source data corrupt lifecycle state or public output;
+- let failed searches close or mutate listings;
+- corrupt or silently discard canonical state during migration, backup, restore, or deployment;
+- publish private state through logs, caches, artifacts, images, or workflows;
+- compromise dependencies, Actions, containers, snapshots, or deployment credentials;
+- make the website write SQLite, expose internal data, or omit required browser protections.
 
-## Usually not a security vulnerability
+### Usually not a security issue
 
-These are normally operational or data-quality issues unless they cross a security boundary:
+The following normally belong in a sanitized public issue unless they cross a security boundary:
 
-- a legitimate internship being missed by strict filtering;
-- a public listing being classified incorrectly;
-- LinkedIn changing guest-page markup;
-- an authorized request receiving HTTP `429`, `403`, a timeout, or a challenge page;
-- duplicate public listings with distinct LinkedIn job IDs;
-- a stale README projection corrected by `render` and `validate`;
-- collection remaining unavailable because authorization was not obtained;
-- a listing closing later than expected under the conservative confirmation model.
+- missed or misclassified listings;
+- distinct duplicate IDs;
+- source markup changes;
+- stale generated projections;
+- conservative delayed closure;
+- ordinary `403`, `429`, timeout, or challenge responses.
 
-Report these through normal GitHub issues using sanitized details.
+## Secrets and release security
 
-## Secret handling
+Never commit or publish:
 
-Never commit or paste into issues, pull requests, tests, fixtures, screenshots, logs, or documentation:
+- `.env` contents or tokens;
+- LinkedIn credentials, cookies, sessions, or browser storage;
+- GitHub, package, deployment, or SSH credentials;
+- private proxy or host configuration;
+- authenticated HTML;
+- production databases or sidecars.
 
-- `.env` contents;
-- credentials or access tokens;
-- LinkedIn cookies, sessions, or browser storage;
-- GitHub tokens or Actions secrets;
-- deployment SSH keys or private host configuration;
-- private proxy URLs;
-- authenticated or private HTML;
-- production databases or SQLite sidecars.
+Use synthetic placeholders and minimal sanitized fixtures.
 
-Use synthetic values and minimal sanitized fixtures.
+If a secret is exposed, revoke or rotate it immediately, remove it from current files and repository history where appropriate, and review logs, artifacts, caches, and deployments. A later deletion commit is not sufficient.
 
-If a secret is committed, assume it is compromised:
+For dependencies and releases:
 
-1. revoke or rotate it immediately;
-2. remove it from current files;
-3. remove it from repository history where appropriate;
-4. review logs, artifacts, caches, and deployments for additional exposure.
-
-Deleting a secret in a later commit is not sufficient.
-
-## Dependency and release security
-
-- Keep `uv.lock` and `site/bun.lock` committed.
-- Use frozen installs in CI and reproducible environments.
-- Keep third-party GitHub Actions pinned to immutable revisions where practical.
-- Review automated dependency updates before merging.
-- Run the validation paths relevant to the release.
-- Do not publish packages, images, or deployment artifacts from a dirty or unvalidated tree.
-- Keep release and version references synchronized across project metadata, lockfiles, user agents, and documentation.
-- Protect package-publishing credentials, deployment keys, workflow environments, durable snapshots, artifacts, caches, and backups with least-privilege access.
+- commit `uv.lock` and `site/bun.lock`, and use frozen installs;
+- pin Actions and CI tool images to immutable revisions where practical;
+- review weekly Dependabot updates for Python, website, Actions, and Docker inputs;
+- lint workflows and Dockerfiles, reject fixable high or critical image vulnerabilities, and verify production security headers in CI;
+- keep version references synchronized across metadata, lockfiles, images, user agents, and documentation;
+- publish only from a clean, validated tree;
+- protect deployment keys, artifacts, caches, snapshots, backups, and package credentials with least privilege.
 
 ## Responsible disclosure
 
-Act in good faith and test only against systems and data you own or are explicitly authorized to test.
+Test only systems and data you own or are explicitly authorized to test.
 
-- Minimize requests and data access.
-- Prefer local fixtures and synthetic state.
-- Do not access, modify, retain, or disclose data belonging to other people.
-- Do not degrade availability, exhaust quotas, or interfere with active workflows.
-- Stop testing after the vulnerability has been demonstrated.
-- Do not use a vulnerability to bypass LinkedIn or third-party access controls.
-- Coordinate public disclosure with the maintainer.
+Minimize requests and data access, prefer local fixtures, avoid affecting other users or availability, and stop after demonstrating the issue.
 
-These guidelines do not authorize testing against LinkedIn, GitHub, the production VPS, or any other third-party system.
-
-Coordinated disclosure helps protect users, operators, and contributors while a fix is prepared.
+This policy does not authorize testing against LinkedIn, GitHub, the production VPS, or any third party. Never use a vulnerability to bypass access controls. Coordinate disclosure with the maintainer.

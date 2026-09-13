@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 CLI Reference
 
-[← Documentation](../../README.md) · [Installation](../getting-started/installation.md) · [Configuration](../getting-started/configuration.md)
+[← Documentation hub](../../README.md) · [Installation](../getting-started/installation.md) · [Configuration](../getting-started/configuration.md) · [Troubleshooting](../operations/troubleshooting.md) · [Security policy](../../../SECURITY.md)
 
-The `opportunities` CLI manages database migrations, search inspection, authorized collection, canonical SQLite state, validation, and generated documentation projections.
+This is the canonical CLI reference for the project. The `opportunities` CLI manages database migrations, search inspection, authorized collection, canonical SQLite state, validation, and generated documentation projections.
 
 Show the command overview:
 
@@ -48,7 +48,7 @@ The global `--settings` option must appear before the command name.
 | `search-test` | Run one authorized search without persistence |
 | `scrape` | Run authorized collection and persist independent search outcomes |
 | `check-availability` | Audit every stored LinkedIn listing and delete explicitly unavailable rows |
-| `render` | Regenerate the bounded README projection from SQLite |
+| `render` | Regenerate owned README and search-registry documentation projections |
 | `stats` | Display aggregate canonical state |
 | `validate` | Check schema, lifecycle invariants, and generated projections |
 
@@ -90,7 +90,7 @@ Displays the effective search registry, including:
 
 It performs no network access and does not modify SQLite.
 
-Use it after changing search YAML, category mappings, or global limit overrides.
+Use it after changing search YAML or global search-limit overrides.
 
 Search schema and tuning are documented in the [search registry guide](search-registry.md).
 
@@ -144,7 +144,7 @@ The command:
 4. fetches, parses, normalizes, and classifies candidates;
 5. commits each search outcome independently;
 6. updates provenance and explicit lifecycle evidence;
-7. renders the README unless `--no-render` is set.
+7. renders the owned README and search-registry documentation projections unless `--no-render` is set.
 
 A partial run preserves successful search transactions.
 
@@ -155,7 +155,7 @@ A failed search:
 - does not increment unavailability confirmations;
 - does not close jobs.
 
-Use `--no-render` where canonical state should change without modifying the Git working tree, such as a website-only VPS.
+Use `--no-render` where canonical state should change without modifying generated files in the Git working tree, such as a website-only VPS.
 
 The collection lifecycle is documented in [Architecture](../development/architecture.md#failure-isolation) and [Database lifecycle](../operations/database.md#successful-search-transaction).
 
@@ -178,7 +178,7 @@ The command requires the LinkedIn authorization interlock and checks every job r
 - a scoped public-page “No longer accepting applications” alert also permanently deletes the job;
 - authentication failures, rate limits, server errors, malformed responses, and transport failures preserve the row as inconclusive.
 
-The command exits with code `2` when one or more checks are inconclusive. Confirmed results remain committed, and the default path refreshes the README projection. The nightly workflow runs this full audit once per day before scraping and opens or updates one combined pull request for manual review. The availability-only workflow can run the same command manually and opens its own pull request.
+The command exits with code `2` when one or more checks are inconclusive. Confirmed results remain committed, and the default path refreshes the owned generated documentation projections. The nightly workflow runs this full audit once per day before scraping and opens or updates a tightly scoped README pull request that auto-merges only through configured required checks. The availability-only workflow can run the same command manually and opens its own manual-review pull request.
 
 ## `render`
 
@@ -186,7 +186,7 @@ The command exits with code `2` when one or more checks are inconclusive. Confir
 uv run opportunities render
 ```
 
-Regenerates generated documentation from canonical SQLite state.
+Regenerates owned generated documentation from canonical SQLite state and the configured search registry.
 
 The README projection includes:
 
@@ -195,18 +195,19 @@ The README projection includes:
 - the public website link;
 - at most five recently posted internships and five recently posted New Grad opportunities.
 
-Generated search-registry counts are also updated where owned by the rendering path.
+The generated registry-layout counts in [`search-registry.md`](search-registry.md) are refreshed from `configs/searches/` at the same time.
 
 The command:
 
 - performs no network access;
 - does not modify SQLite;
-- writes the owned README block through atomic replacement.
+- writes the owned README regions through atomic replacement;
+- refreshes the owned generated registry-layout block in `search-registry.md`.
 
 > [!IMPORTANT]
 > A fresh local database contains no listings. Do not render and commit the preview from empty development state.
 
-Do not edit generated rows manually.
+Do not edit generated counts, timestamps, opportunity rows, or registry-layout counts manually.
 
 ## `stats`
 
@@ -237,7 +238,7 @@ Checks:
 - the Alembic revision;
 - monotonic lifecycle timestamps;
 - exact README projection equality with canonical state;
-- generated search-registry documentation counts.
+- generated search-registry layout counts against the configured YAML files.
 
 Validation performs no network access and never repairs state automatically.
 
@@ -251,7 +252,7 @@ For diagnosis, use [Troubleshooting](../operations/troubleshooting.md).
 |---:|---|
 | `0` | Command completed successfully |
 | `1` | Every selected search failed, or validation found an inconsistency |
-| `2` | Partial scrape or availability audit, invalid command input, or configuration rejection |
+| `2` | Partial scrape, availability audit with inconclusive checks, or rejected command/configuration input |
 | `3` | Required database tables are missing or the schema is not at migration head |
 
 After a partial scrape with exit code `2`:
@@ -265,16 +266,16 @@ GitHub Actions handling of these codes is documented in [Automation](../operatio
 
 ## Command side effects
 
-| Command | LinkedIn network | Writes SQLite | Writes README |
+| Command | LinkedIn network | Writes SQLite | Writes generated docs |
 |---|---:|---:|---:|
 | `db-upgrade` | No | Schema only | No |
 | `searches` | No | No | No |
 | `search-test` | Yes, after authorization gate | No | No |
-| `scrape` | Yes, after authorization gate | Yes | Normally |
+| `scrape` | Yes, after authorization gate | Yes | README + registry docs after at least one successful search |
 | `scrape --no-render` | Yes, after authorization gate | Yes | No |
-| `check-availability` | Yes, after authorization gate | Yes | Normally |
+| `check-availability` | Yes, after authorization gate | Yes | README + registry docs |
 | `check-availability --no-render` | Yes, after authorization gate | Yes | No |
-| `render` | No | No | Yes |
+| `render` | No | No | README + registry docs |
 | `stats` | No | No | No |
 | `validate` | No | No | No |
 
@@ -288,7 +289,7 @@ uv run opportunities searches
 uv run opportunities stats
 ```
 
-A new database is expected to contain no listings.
+A fresh database intentionally contains no listings.
 
 ### Inspect registry and canonical state
 

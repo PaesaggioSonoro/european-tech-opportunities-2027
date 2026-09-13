@@ -1,6 +1,6 @@
-<h1 align="center">
-    Code of Conduct
-</h1>
+# Code of Conduct
+
+[← Project README](README.md) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Documentation hub](docs/README.md)
 
 We as contributors, maintainers, and community members pledge to make participation in European Tech Opportunities 2027 a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socioeconomic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
 
@@ -34,17 +34,26 @@ This Code of Conduct applies in all project spaces, including issues, pull reque
 
 ## Reporting conduct issues
 
-Report abusive, harassing, or otherwise unacceptable behavior privately to the maintainer at [simonesiega1@gmail.com](mailto:simonesiega1@gmail.com). Include links, context, and supporting material when safe to do so. Reports will be reviewed promptly and fairly, and the privacy and safety of the reporter will be respected as far as reasonably possible.
+Report abusive, harassing, or otherwise unacceptable behavior privately to the maintainer at [simonesiega1@gmail.com](mailto:simonesiega1@gmail.com). Include links, dates, context, and supporting material only when safe to do so. Do not collect additional private information or continue an unsafe interaction merely to document it.
 
-If a report concerns the project maintainer or cannot safely be reported by email, use [GitHub's Report Abuse process](https://support.github.com/contact/report-abuse).
+Reports will be assessed as fairly and confidentially as reasonably possible. The maintainer will make a reasonable effort to acknowledge a complete report, explain any immediate safety steps, and communicate an outcome; no fixed response-time guarantee is provided. Information may be shared only when needed to investigate, enforce this policy, protect participants, or comply with law.
 
-Do not use this process to report a security vulnerability. Follow [`SECURITY.md`](SECURITY.md) for private vulnerability disclosure.
+Good-faith reporters and participants in an investigation must not be retaliated against. Knowingly false or bad-faith reports may themselves violate this Code of Conduct; a report that cannot be substantiated is not, by itself, a false report.
+
+If a report concerns the project maintainer or cannot safely be reported by email, use [GitHub's Report Abuse process](https://support.github.com/contact/report-abuse). Do not send a conduct report through a public issue or pull request.
+
+> [!NOTE]
+> Security vulnerabilities follow a separate process. Use the [Security policy](SECURITY.md) for private vulnerability disclosure.
 
 ## Enforcement responsibilities
 
-Project maintainers are responsible for clarifying and enforcing acceptable behavior. They may remove, edit, or reject comments, commits, code, issues, and other contributions that are inconsistent with this Code of Conduct and will communicate moderation reasons when appropriate.
+Project maintainers are responsible for clarifying and enforcing acceptable behavior. They may remove, edit, or reject comments, commits, code, issues, and other contributions that are inconsistent with this Code of Conduct.
 
-Maintainers who receive a report must avoid conflicts of interest, protect confidential information, consider the context and impact of the behavior, and apply proportionate consequences consistently. A maintainer who is the subject of a report must not make the enforcement decision for that report where another appropriate reviewer is available.
+When safe and appropriate, maintainers will communicate the rule involved, the action taken, its duration, and any conditions for return without exposing confidential report details.
+
+Maintainers who receive a report must avoid conflicts of interest, protect confidential information, consider the context and impact of the behavior, document the enforcement rationale privately, and apply proportionate consequences consistently.
+
+A maintainer who is the subject of a report must not make the enforcement decision where another appropriate reviewer is available. Reports concerning the sole maintainer should use GitHub's independent Report Abuse process.
 
 ## Enforcement guidelines
 
@@ -79,9 +88,3 @@ Maintainers will use these Community Impact Guidelines when determining conseque
 This Code of Conduct is adapted from the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).
 
 The Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/diversity).
-
-## Related documentation
-
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution workflow and technical expectations
-- [`SECURITY.md`](SECURITY.md) — security boundaries and private vulnerability reporting
-- [`docs/README.md`](docs/README.md) — documentation navigation

@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 Search Registry Guide
 
-[← Documentation](../../README.md) · [CLI reference](cli.md) · [Architecture](../development/architecture.md)
+[← Documentation hub](../../README.md) · [CLI reference](cli.md) · [Configuration](../getting-started/configuration.md) · [Architecture](../development/architecture.md) · [Contributing](../../../CONTRIBUTING.md) · [Security policy](../../../SECURITY.md)
 
-The search registry controls **discovery**, not publication. Every new candidate found through LinkedIn guest search must still pass deterministic posting-date, employment-type, seniority, cycle, technology, and European-location checks before entering canonical SQLite state.
+This is the canonical search-registry guide for the project. The registry controls **discovery**, not publication. Every new candidate found through LinkedIn guest search must still pass deterministic posting-date, employment-type, seniority, cycle, technology, and European-location checks before entering canonical SQLite state.
 
 <p align="center">
   <img
@@ -39,9 +39,9 @@ configs/searches/
 └── countries/   # 33 country partitions
 ```
 
-Generated documentation may display the current count for each group. `opportunities render` refreshes owned counts, and `opportunities validate` compares them with the effective registry.
+Generated documentation displays the current YAML-file count for each group. `opportunities render` refreshes the owned layout block, and `opportunities validate` compares those counts with `configs/searches/`.
 
-Do not edit generated counts manually.
+Do not edit the generated layout counts manually; change the registry files and run the owning render path instead.
 
 ## Search groups
 
@@ -110,14 +110,17 @@ Before network access, the registry loader requires:
 
 It returns searches in deterministic slug order. The production configuration test additionally requires role filenames to map to `OpportunityCategory` and enforces the repository conventions below.
 
-Conventions:
+Repository production conventions are stricter than the model-level field limits:
 
 - filenames and slugs remain stable lowercase kebab-case;
 - role filenames map to `OpportunityCategory`;
-- every query requests both internship and New Grad terminology without requiring a year;
+- every production search is enabled;
+- every query requests `intern`, `new grad`, and `graduate` terminology without requiring a year;
 - every production search uses the dynamic `cycle` posting filter, covering May 1, 2026 through collection time;
-- employer searches use exact normalized `company_names`;
-- country searches use explicit country location text;
+- production searches use 1–4 pages, `max_results == max_pages × 25`, and 5–25 rechecks;
+- Europe-wide searches use the verified Europe geography ID `91000000`;
+- employer searches use non-empty exact normalized `company_names`;
+- country searches use explicit country location text and `geo_id: null`;
 - numeric geography IDs are never invented;
 - `notes` explain scope and tuning without unsupported coverage claims.
 
@@ -132,7 +135,7 @@ Contribution requirements are defined in [`CONTRIBUTING.md`](../../../CONTRIBUTI
 
 ## Query identity
 
-An effective query identity combines normalized values of:
+An effective query identity combines the normalized request-defining values of:
 
 ```text
 keywords
@@ -143,14 +146,15 @@ date_posted
 company_names
 ```
 
-Two files cannot issue the same effective request under different filenames or slugs.
+Two files cannot issue the same effective request under different filenames or slugs. Company allowlist order does not affect identity, and duplicate identities are rejected even when one of the searches is disabled.
 
 The slug is persisted as the search identity. Prefer changing tunable fields without renaming an existing slug.
 
 Disabling or deleting a search:
 
-- preserves its historical run records;
+- preserves its historical run records and provenance;
 - prevents future selection;
+- is synchronized into persisted search state on the next collection run;
 - does not directly close associated jobs.
 
 Collection-driven job closure depends on repeated explicit detail-page unavailability across every active association, not registry deletion. The separate [full-state availability audit](../operations/database.md#daily-full-state-availability-audit) follows its own explicit deletion rules.
@@ -163,7 +167,7 @@ Collection stops when:
 
 - the page is empty;
 - the page contains no unseen raw job IDs;
-- the eligible-result limit is reached;
+- the eligible-card limit (`max_results`) is reached;
 - the page limit is reached.
 
 A page containing cards but no title-explicit internship or New Grad matches does **not** stop pagination.
@@ -173,7 +177,7 @@ Before detail requests, search cards pass two low-cost checks:
 1. exact normalized employer allowlist matching, when configured;
 2. explicit internship or New Grad terminology in the title.
 
-These checks reduce unnecessary detail requests. Final acceptance still occurs only after detail parsing, normalization, and deterministic classification.
+These checks reduce unnecessary detail requests and do not constitute publication acceptance. Final acceptance occurs only after detail parsing, normalization, and deterministic classification.
 
 ## Limit tiers
 
@@ -208,9 +212,9 @@ Global diagnostic overrides belong to [Configuration](../getting-started/configu
 2. Choose one coherent technology discipline.
 3. Include the standard internship/New Grad Boolean terms without a year restriction.
 4. Use the verified Europe geography configuration for Europe-wide discovery.
-5. Start with the smallest defensible tier.
+5. Start with the smallest defensible tier within the production 1–4 page policy.
 6. Explain role scope and tuning in `notes`.
-7. Add the filename value to `OpportunityCategory` when introducing a category.
+7. Ensure the filename maps to `OpportunityCategory`; when introducing a category, update the classification configuration and tests as well.
 8. Add or update registry and classifier tests.
 
 Example path:
@@ -234,6 +238,7 @@ Requirements:
 - prefix the slug with `company-`;
 - use broad but explicit keywords that include both internship and New Grad terms;
 - omit `2027` so current yearless vacancies are discoverable, and use `date_posted: cycle` to cover the complete May 1 publication window;
+- use the verified Europe geography ID `91000000` for Europe-wide discovery;
 - list legitimate LinkedIn employer-name variants in `company_names`;
 - retain exact matching after normalization;
 - do not use substring matching;
@@ -274,7 +279,7 @@ Requirements:
 
 - prefix the slug with `country-`;
 - use the explicit country name as `location`;
-- omit `geo_id` unless independently verified;
+- set `geo_id: null`; current production country partitions use explicit country text rather than geography IDs;
 - include both internship and New Grad terminology without a year restriction;
 - start unobserved or low-volume countries at the minimal tier;
 - avoid claiming complete national coverage.
@@ -316,6 +321,6 @@ Only with express authorization, preview one search without persistence:
 uv run opportunities search-test <slug>
 ```
 
-Confirm that the slug and query identity are unique, geography and employer values are justified, limits use the smallest defensible tier, the review date is accurate, and relevant tests pass.
+Confirm that the slug and effective query identity are unique, geography and employer values follow the production policy, limits use the smallest defensible tier, the review date is accurate, generated registry counts are refreshed when needed, and relevant tests pass.
 
 Do not require reviewers or CI to contact LinkedIn. Search files do not grant authorization, and an access block or challenge is a stop condition.

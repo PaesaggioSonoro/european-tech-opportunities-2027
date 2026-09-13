@@ -1,21 +1,12 @@
 # European Tech Opportunities 2027 Database and Lifecycle Guide
 
-[← Documentation](../../README.md) · [Architecture](../development/architecture.md) · [Automation](automation.md)
+[← Documentation hub](../../README.md) · [Architecture](../development/architecture.md) · [Automation](automation.md) · [Troubleshooting](troubleshooting.md) · [Security policy](../../../SECURITY.md)
 
-SQLite is the project’s canonical operational state. Search YAML defines discovery configuration, while the website and README remain read-only projections.
-
-Default database path:
-
-```text
-data/opportunities.db
-```
-
-Deployments created before the Opportunities rename must stop all writers and rename `internships.db` to `opportunities.db` before starting the updated pipeline or website. Move any active `-wal` and `-shm` sidecars together, or checkpoint WAL before renaming.
-
-The database and SQLite sidecars are ignored by Git.
+This is the canonical database and lifecycle guide for the project. SQLite is the source of truth for operational lifecycle state. Search YAML defines discovery configuration, while the website and README remain read-only projections.
 
 ## Contents
 
+- [Database location](#database-location)
 - [Schema overview](#schema-overview)
 - [Canonical job state](#canonical-job-state)
 - [Search state and runs](#search-state-and-runs)
@@ -31,12 +22,26 @@ The database and SQLite sidecars are ignored by Git.
 - [Projection consistency](#projection-consistency)
 - [Data handling](#data-handling)
 
+## Database location
+
+Default database path:
+
+```text
+data/opportunities.db
+```
+
+The database and SQLite sidecars are ignored by Git.
+
+### Legacy database rename
+
+Deployments created before the Opportunities rename must stop all writers and rename `internships.db` to `opportunities.db` before starting the updated pipeline or website. Move any active `-wal` and `-shm` sidecars together, or checkpoint WAL before renaming.
+
 ## Schema overview
 
 ```text
-searches <── search_runs
-    │
-    └─── job_searches ──> jobs
+searches 1 ──────── * search_runs
+   │
+   └──── 1 ─────── * job_searches * ─────── 1 jobs
 
 alembic_version records the current schema revision
 ```
@@ -62,7 +67,7 @@ Important `jobs` fields:
 | `employment_type` | Required deterministic type: `internship` or `new-grad` |
 | `start_date` | Explicit month or season plus year, when available |
 | `first_seen_at` | Inferred LinkedIn publication time for new rows; immutable |
-| `last_seen_at` | Latest accepted observation; monotonic |
+| `last_seen_at` | Latest successful listing observation or availability validation; monotonic |
 | `updated_at` | Latest material field change, reopen, or close |
 | `status` | `open` or `closed` |
 
@@ -84,7 +89,7 @@ Each selected search creates one `search_runs` row.
 Successful runs record:
 
 - found, accepted, and excluded counts;
-- warnings;
+- warning count;
 - start and finish timestamps;
 - duration.
 
@@ -112,7 +117,7 @@ absent from one search page
 explicitly unavailable
 ```
 
-Search ranking, pagination, or query changes cannot close a job by themselves.
+Search ranking, pagination, card disappearance, or query changes cannot close a job by themselves.
 
 ## Successful search transaction
 
@@ -189,7 +194,7 @@ anything else                                          → preserve the job as i
 
 The auditor collects every outcome before applying confirmed changes in one transaction. Rate limits, authentication failures, redirects, server errors, invalid content, and transport failures never become deletion evidence. Search and run history remain available after a job deletion.
 
-The README is regenerated after the transaction. The nightly workflow includes the audit result in its combined pull request, while a manual availability-only run uses a separate review pull request. SQLite itself remains canonical runtime state and is not committed to Git.
+The README is regenerated after the transaction. The nightly workflow includes the audit result in its combined, scope-checked auto-merge pull request, while a manual availability-only run uses a separate manual-review pull request. SQLite itself remains canonical runtime state and is not committed to Git.
 
 ## Timestamp invariants
 
@@ -209,7 +214,7 @@ Validation requires:
 last_seen_at >= first_seen_at
 ```
 
-`first_seen_at` remains immutable after insertion. If posting metadata is unavailable, known jobs may still be rechecked safely, but a new listing is not admitted without posting-date evidence on or after May 1, 2026.
+`first_seen_at` remains immutable after insertion. For a new row, it is initialized from the inferred LinkedIn posting timestamp when available, bounded so it can never be later than the actual observation time; otherwise it uses the first accepted observation time. Missing posting metadata excludes a yearless listing, but a listing with explicit target-cycle evidence may still be admitted. Known jobs may also be rechecked safely without treating missing current posting-age metadata as closure evidence.
 
 ## One-writer model
 
@@ -266,7 +271,7 @@ When SQLite may still be open, use the backup API:
 uv run python -c "import sqlite3; s=sqlite3.connect('data/opportunities.db'); d=sqlite3.connect('data/opportunities.backup.db'); s.backup(d); d.close(); s.close()"
 ```
 
-Store backups outside normal repository cleanup paths.
+Store backups outside normal repository cleanup paths and treat verified durable snapshots as the preferred recovery source for canonical production state.
 
 For a cold filesystem copy:
 
@@ -275,7 +280,7 @@ For a cold filesystem copy:
 3. checkpoint write-ahead logging;
 4. copy the database and any required sidecars together.
 
-GitHub Actions checkpoints WAL, then uses the SQLite backup API to create a timestamped snapshot through a restricted VPS SFTP account. Each snapshot has a strict manifest containing its SHA-256 checksum, schema revision, collection and creation timestamps, previous-snapshot reference, and minimum retention policy. The workflow round-trips and opens uploaded files before atomically advancing the latest pointer. Cache is only an accelerator, and 30-day artifacts are a secondary short-term copy.
+GitHub Actions checkpoints WAL, then uses the SQLite backup API to create a timestamped snapshot through a restricted VPS SFTP account. Each snapshot has a strict manifest containing its SHA-256 checksum, schema revision, collection and creation timestamps, previous-snapshot reference, and configured retention metadata. The workflow round-trips and opens uploaded files before atomically advancing the latest pointer. Cache is only an accelerator, and 30-day artifacts are a secondary short-term copy.
 
 VPS deployment also preserves the previous canonical file as:
 
@@ -300,7 +305,7 @@ uv run python scripts/canonical_snapshot.py verify \
   --manifest /safe/recovery/manifest.json
 ```
 
-7. Restore the verified database atomically.
+7. Restore the verified database atomically; do not replace canonical state with unverified bytes.
 8. Remove stale sidecars only while no SQLite connection is open.
 9. Run:
 
@@ -322,7 +327,7 @@ For symptom-based diagnosis before destructive recovery, use [Troubleshooting](t
 
 ## Projection consistency
 
-SQLite remains canonical even though the project exposes two public projections.
+SQLite remains canonical even though the project exposes two read-only public projections.
 
 ### Website
 
@@ -359,7 +364,7 @@ Never reconstruct canonical state from the README. It omits:
 - closure confirmations;
 - operational diagnostics.
 
-Manual edits inside the generated block are overwritten.
+Manual edits inside the generated regions are overwritten.
 
 ## Data handling
 

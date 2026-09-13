@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 Docker and Deployment Guide
 
-[← Documentation](../../README.md) · [Website](../user-guide/website.md) · [Automation](automation.md)
+[← Documentation hub](../../README.md) · [Website](../user-guide/website.md) · [Automation](automation.md) · [Database lifecycle](database.md) · [Troubleshooting](troubleshooting.md) · [Security policy](../../../SECURITY.md)
 
-This guide documents the project’s Docker image targets, Compose topology, local container workflow, mounts, runtime permissions, Dokploy configuration, and container-specific production behavior.
+This is the canonical Docker and deployment guide for the project. It documents the Docker image targets, Compose topology, local container workflow, mounts, runtime permissions, Dokploy configuration, and container-specific production behavior.
 
 Docker does not change the authorization, lifecycle, or one-writer contracts.
 
@@ -22,12 +22,14 @@ Docker does not change the authorization, lifecycle, or one-writer contracts.
 
 ## Image targets
 
-The root `Dockerfile` produces two final targets:
+The root `Dockerfile` is the executable source of truth for image versions and produces two final targets:
 
-| Target | Runtime | Responsibility |
+| Target | Final runtime | Responsibility |
 |---|---|---|
-| `opportunities` | Python 3.14.7 with the pinned `uv` 0.12.5 binary | CLI commands, migrations, collection, validation, and README rendering |
-| `site` | Node 26 Alpine with Next.js standalone output | Read-only website server on port `3000` |
+| `opportunities` | Python 3.14.7 on Debian 13 slim | CLI commands, migrations, collection, validation, and generated-document rendering |
+| `site` | Node.js 26 on Debian 13 slim with Next.js standalone output | Read-only website server on port `3000` |
+
+Disposable build stages use the digest-pinned `uv` 0.12.11 image, Bun 1.4.2 on Alpine, and Node.js 26 on Alpine. Package-manager binaries are omitted from the final images: the pipeline invokes the installed console script directly, and the website runtime omits npm.
 
 Both final images run as an unprivileged user:
 
@@ -38,7 +40,7 @@ GID 10001
 
 The Compose services also drop all Linux capabilities and set `no-new-privileges`.
 
-The images install only the dependencies required by their target and use the committed lockfiles for reproducible builds.
+The images install only the dependencies required by their target and use committed lockfiles, versioned images, and immutable image digests for reproducible builds. Both Debian runtime targets install exact reviewed security revisions for `gzip`, PCRE2, SQLite, and Perl until those revisions are incorporated into the pinned base-image digests. Update the pins and package versions together; an unavailable exact package version is intentionally a build failure rather than a silent fallback.
 
 ## Build images
 
@@ -91,7 +93,7 @@ The pipeline service uses:
 | Source | Destination | Mode | Purpose |
 |---|---|---|---|
 | `./configs` | `/app/configs` | Read-only | Search and classification YAML |
-| Repository root | `/workspace` | Read/write | Atomic README projection replacement |
+| Repository root | `/workspace` | Read/write | Atomic README and search-registry documentation replacement |
 | `/srv/european-tech-opportunities-2027/data` | `/app/data` | Read/write | Canonical SQLite state |
 
 The website service mounts only the same host state directory, in read-only mode, and opens SQLite read-only.
@@ -105,7 +107,7 @@ pipeline: sqlite:////app/data/opportunities.db
 website:  /app/data/opportunities.db
 ```
 
-Only the controlled pipeline service may mutate canonical state.
+Only the controlled pipeline service may mutate canonical state. The `site` service has both a read-only bind mount and a read-only SQLite connection, providing defense in depth.
 
 ## Start the website locally
 
@@ -122,7 +124,7 @@ docker compose ps
 docker compose logs site
 ```
 
-The default Compose configuration exposes the website inside the container network rather than publishing a fixed host port.
+The default Compose configuration exposes port `3000` only to the Compose network; it does not publish a fixed host port.
 
 For direct browser access during local development:
 
@@ -158,7 +160,7 @@ docker compose run --rm opportunities validate
 
 These commands do not contact LinkedIn.
 
-An empty host state directory contains no listings. Do not render and commit the README projection from empty state.
+A fresh host state directory intentionally contains no listings. Do not render and commit generated projections from empty state.
 
 CLI command behavior is documented in the [CLI reference](../user-guide/cli.md).
 
@@ -182,7 +184,7 @@ OPPORTUNITIES_LINKEDIN_CRAWL_AUTHORIZED=true \
   scrape --search company-amazon
 ```
 
-On a website-only VPS, `scrape --no-render` avoids modifying the deployment working tree when README rendering is not part of that execution path.
+On a website-only VPS, `scrape --no-render` avoids modifying generated files in the deployment working tree when rendering is not part of that execution path.
 
 Do not run an independent local or VPS collector while GitHub Actions owns canonical state.
 
@@ -193,15 +195,15 @@ Exact interlock behavior belongs to [Configuration](../getting-started/configura
 
 ## Dokploy deployment
 
-Production directory:
+Production site:
 
 **https://opportunities2027.simonesiega.com/**
 
-> [!IMPORTANT]
-> Before deploying the renamed stack, stop every writer, move existing canonical state into
-> `/srv/european-tech-opportunities-2027/data`, and provision the restricted
-> `opportunities-site` host group. Restart collection and the website only after both services
-> resolve the same database file.
+### Legacy deployment migration
+
+Deployments created before the Opportunities rename must stop every writer, move existing canonical state into `/srv/european-tech-opportunities-2027/data`, and provision the restricted `opportunities-site` host group. Restart collection and the website only after both services resolve the same database file.
+
+### Dokploy configuration
 
 Configure Dokploy to:
 
@@ -231,7 +233,7 @@ The website opens a new short-lived read-only connection for each server request
 - a rebuild;
 - an in-process state synchronization service.
 
-Workflow-side secrets, checksums, artifacts, rebuild controls, and deployment sequencing are documented in [Automation](automation.md#vps-deployment).
+Workflow-side secrets, checksums, artifacts, recovery controls, and deployment sequencing are documented in [Automation](automation.md#vps-deployment).
 
 ## Volume permissions
 
@@ -244,17 +246,16 @@ GID 10001
 
 The website requires read access to the SQLite database and its parent directory.
 
-README rendering additionally requires write and execute access to the mounted repository directory because the renderer:
+Generated-document rendering additionally requires write and execute access to the relevant parent directories. The CLI atomically replaces both the owned README regions and the generated registry-layout block in `docs/guides/user-guide/search-registry.md`.
 
-1. creates a same-directory temporary file;
-2. writes the generated block;
-3. atomically renames the temporary file over `README.md`.
-
-A narrow Linux ACL can grant the required access:
+A narrow Linux ACL can grant the required access without making the repository broadly writable:
 
 ```bash
 sudo setfacl -m u:10001:rwx .
 sudo setfacl -m u:10001:rw README.md
+sudo setfacl -m u:10001:rx docs docs/guides
+sudo setfacl -m u:10001:rwx docs/guides/user-guide
+sudo setfacl -m u:10001:rw docs/guides/user-guide/search-registry.md
 ```
 
 For a production database deployed by automation, the workflow assigns:
@@ -264,7 +265,7 @@ group: opportunities-site
 mode:  0660
 ```
 
-The host must map that restricted group so the containers' GID `10001` can access the bind-mounted file.
+The host-side `opportunities-site` group must map to GID `10001` so the unprivileged containers can access the bind-mounted file without broadening permissions.
 
 Do not use `chmod 777`, run the full application as root, or make the Docker socket broadly accessible to avoid correcting ownership.
 
@@ -302,7 +303,7 @@ docker run --rm \
 
 Reuse the same mounts for other pipeline commands.
 
-A named volume survives `--rm`, but remains operational state rather than a backup. Backup and restore procedures belong to [Database lifecycle](database.md#backup).
+A named volume survives `--rm`, but this standalone example is separate from the supported production host-bind topology and remains operational state rather than a backup. Backup and restore procedures belong to [Database lifecycle](database.md#backup).
 
 ## Production maintenance
 
@@ -310,17 +311,21 @@ Use this order for production state changes:
 
 <div align="center">
 <pre>
-migrate
+restore or migrate canonical state
 ↓
-collect or repair
+collect or repair through the controlled writer
 ↓
 validate
 ↓
-checkpoint and back up
+checkpoint + publish verified durable snapshot
 ↓
-deploy atomically
+review and merge the README projection
+↓
+deploy the reviewed state atomically
 </pre>
 </div>
+
+Normal automation keeps collection and deployment separate: newly collected state is proposed through a README pull request, while deployment-only mode restores and validates the reviewed durable state from `main` before replacing the production database.
 
 After changing Dockerfile or Compose behavior, run:
 
@@ -337,13 +342,16 @@ docker compose run --rm opportunities --help
 docker compose config
 ```
 
+Docker CI additionally runs Actionlint, Hadolint, and digest-pinned Trivy image scans. It rejects fixable high or critical image vulnerabilities and smoke-tests the migrated website plus its production Content Security Policy and HTTP Strict Transport Security headers.
+
 Preserve:
 
 - one canonical writer;
 - the read-only website mount;
 - the bind-mounted SQLite state directory;
 - UID/GID `10001:10001`;
-- frozen dependency installation;
+- frozen dependency installation and synchronized immutable image/package pins;
+- no package-manager tooling in final runtime images;
 - no secrets in build arguments or image layers;
 - no production databases copied into images.
 
@@ -351,6 +359,6 @@ Run every affected check from the [development validation matrix](../development
 
 ## Troubleshooting
 
-For empty or unmigrated state directories, SQLite read permissions, README atomic replacement, Compose expansion, image startup, or Dokploy routing problems, use the [Docker failures section of the troubleshooting guide](troubleshooting.md#docker-failures).
+For empty or unmigrated state directories, SQLite read permissions, generated-document atomic replacement, Compose expansion, image startup, or Dokploy routing problems, use the [Docker failures section of the troubleshooting guide](troubleshooting.md#docker-failures).
 
 Workflow-side deployment failures belong to [GitHub Actions and deployment troubleshooting](troubleshooting.md#github-actions-and-deployment).

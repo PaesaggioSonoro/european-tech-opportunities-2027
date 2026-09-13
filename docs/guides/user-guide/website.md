@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 Website Guide
 
-[← Documentation](../../README.md) · [Open the live site](https://opportunities2027.simonesiega.com/)
+[← Documentation hub](../../README.md) · [CLI reference](cli.md) · [Search registry](search-registry.md) · [Docker and deployment](../operations/docker.md) · [Security policy](../../../SECURITY.md) · [Open the live site](https://opportunities2027.simonesiega.com/)
 
-The [live website](https://opportunities2027.simonesiega.com/) is the project’s primary public interface. It displays every currently open internship and New Grad opportunity in canonical SQLite state, while the root README intentionally shows bounded previews for both types.
+This is the canonical website guide for the project. The [live website](https://opportunities2027.simonesiega.com/) is the primary public interface: it exposes every currently open Internship and New Grad opportunity from canonical SQLite state, while the root README intentionally shows bounded previews for both types.
 
 ## Contents
 
@@ -43,7 +43,7 @@ The directory provides:
 - light and dark themes stored as browser preferences;
 - direct links to public source listings;
 - shareable filter URLs;
-- the current open-opportunity count;
+- a live result count, equal to the total open-opportunity count when no filters are active;
 - the latest successful collection time.
 
 The website supports browsing and comparison only. Applications are completed through the original employer or LinkedIn listing.
@@ -73,9 +73,9 @@ Sortable columns include:
 - location;
 - first-seen date.
 
-Search, filtering, sorting, page size, and pagination affect only the displayed result set. They never mutate canonical state or influence collection.
+Search, filtering, sorting, page size, and pagination affect only the displayed result set. The table defaults to newest first with 10 rows per page and offers 10, 20, 30, 50, or 100 rows per page. None of this presentation state mutates canonical state or influences collection.
 
-Search and filter state is encoded in the URL so a filtered view can be bookmarked or shared. Sorting, page size, and pagination remain local presentation state.
+Search and filter state is encoded in the URL so a filtered view can be bookmarked or shared. Sorting, page size, and pagination remain local component state and are intentionally excluded from the URL.
 
 A browser interaction or URL state is not lifecycle evidence, collection input, or a pipeline instruction.
 
@@ -175,11 +175,11 @@ Website database access lives under:
 site/src/lib/
 ```
 
-`site/src/lib/opportunities.ts` opens SQLite in read-only mode and queries currently open jobs in stable publication order.
+`site/src/lib/opportunities.ts` opens SQLite in read-only mode and queries currently open jobs newest-first by `first_seen_at`, with LinkedIn job ID as the stable tie-breaker.
 
 It also reads the latest successful collection timestamp from `search_runs` for public status metadata; a later failed run cannot make the displayed data appear fresher.
 
-Each server request uses a short-lived database connection that is then closed.
+The root page is dynamically rendered. Each server request opens a short-lived read-only database connection and closes it after loading the directory data.
 
 The website:
 
@@ -196,7 +196,7 @@ Authentication, user-provided content, saved application state, write endpoints,
 
 ## Local website development
 
-A fresh local database may contain no listings, and the website must render that state correctly.
+A fresh local database intentionally contains no listings, and the website must render that valid empty state correctly.
 
 For installation, database initialization, environment-file creation, and first launch, use [Installation](../getting-started/installation.md#run-the-website).
 
@@ -218,12 +218,15 @@ The complete validation path and coding expectations are documented in [Developm
 
 The root Dockerfile’s `site` target:
 
-1. installs dependencies from the frozen Bun lockfile;
-2. builds Next.js standalone output under Node 26;
-3. copies only required standalone and static output into the final image;
-4. runs as UID/GID `10001:10001`;
-5. reads `/app/data/opportunities.db` from a read-only bind mount;
-6. listens on container port `3000`.
+1. installs dependencies from the frozen Bun lockfile in a disposable Alpine build stage;
+2. builds Next.js standalone output under Node.js 26;
+3. copies only required standalone and static output into a Debian 13 slim runtime image;
+4. installs exact reviewed Debian security revisions and removes npm from the runtime;
+5. runs as UID/GID `10001:10001`;
+6. reads `/app/data/opportunities.db` from a read-only bind mount;
+7. listens on container port `3000`.
+
+Every route receives defensive content-type, referrer, framing, cross-origin, and permissions headers. Production additionally sends a Content Security Policy and `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`; Docker CI smoke-tests both production-only headers.
 
 Production variables:
 
@@ -240,15 +243,17 @@ Image targets, volumes, permissions, and routing are documented in [Docker and d
 
 ## Data refresh
 
-The website never collects or synchronizes data itself.
+The website never collects, migrates, or synchronizes data itself.
 
-The authorized automation path:
+Normal automation keeps collection/review and production deployment separate:
 
-1. collects and validates canonical state;
-2. checkpoints and preserves SQLite;
-3. optionally deploys the validated database atomically to the shared host state directory.
+1. the controlled pipeline writer performs availability auditing and/or collection;
+2. the resulting canonical state is validated, checkpointed, and published as a verified durable snapshot;
+3. the owned README projection is proposed through the scoped automation pull request;
+4. after review and merge, deployment-only automation restores and validates the reviewed durable state against `main`;
+5. the production SQLite file is replaced atomically in the shared host state directory.
 
-The website opens a new read-only connection on the next request, so newly deployed state becomes visible without an application rebuild, write endpoint, or in-process migration.
+The website opens a new read-only connection on the next request, so reviewed deployed state becomes visible without an application rebuild, write endpoint, or in-process migration.
 
 Do not run a second local or VPS collector while GitHub Actions owns canonical state.
 
@@ -256,7 +261,7 @@ Workflow orchestration belongs to [Automation](../operations/automation.md), and
 
 ## Privacy and browser integrations
 
-The canonical production layout loads the hosted Umami analytics script from `https://cloud.umami.is/script.js` and restricts collection to `opportunities2027.simonesiega.com`. The script is not rendered in development, tests, or noncanonical deployments. This third-party browser integration must remain within privacy and security review.
+The canonical production layout loads the hosted Umami analytics script from `https://cloud.umami.is/script.js` and restricts collection to `opportunities2027.simonesiega.com`. The script is rendered only when `NODE_ENV` is `production` and the configured `SITE_URL` hostname is that canonical domain, so it is absent from development, tests, and noncanonical deployments. This third-party browser integration must remain within privacy and security review.
 
 The directory itself requires no:
 

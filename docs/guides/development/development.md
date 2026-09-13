@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 Development Guide
 
-[← Documentation](../../README.md) · [Architecture](architecture.md) · [Contributing](../../../CONTRIBUTING.md)
+[← Documentation hub](../../README.md) · [Architecture](architecture.md) · [Contributing](../../../CONTRIBUTING.md) · [Security policy](../../../SECURITY.md)
 
-This guide covers the local engineering workflow, repository structure, coding standards, tests, fixtures, and validation paths. Contribution policy and pull-request requirements live in [`CONTRIBUTING.md`](../../../CONTRIBUTING.md).
+This is the canonical development guide for the project. It covers the local engineering workflow, repository structure, coding standards, tests, fixtures, and validation paths. Contribution policy and pull-request requirements live in [`CONTRIBUTING.md`](../../../CONTRIBUTING.md).
 
 ## Contents
 
@@ -50,8 +50,10 @@ Normal tests and builds require no LinkedIn access. First-time setup belongs in 
 ├── site/                    # Next.js website and Playwright tests
 ├── src/opportunities/       # Python package
 ├── tests/                   # unit, integration, and fixtures
-├── CONTRIBUTING.md
-├── SECURITY.md
+├── CONTRIBUTING.md           # contributor workflow and project contracts
+├── SECURITY.md               # security reporting and trust boundaries
+├── Makefile                  # development and validation shortcuts
+├── README.md                 # public project overview and generated previews
 ├── Dockerfile
 ├── docker-compose.yml
 ├── pyproject.toml
@@ -99,19 +101,19 @@ GNU Make provides the shortcuts below. On Windows or another environment without
 | `make lint` | Run Ruff formatting and lint checks |
 | `make typecheck` | Run strict mypy |
 | `make test` | Run offline functional pytest |
-| `make coverage` | Enforce critical lifecycle/classification branch coverage and write reports |
+| `make coverage` | Enforce critical-path coverage, write reports, and refresh README metrics |
 | `make benchmark` | Measure offline LinkedIn parsing and classification performance |
 | `make test-live` | Explicitly select authorization-gated live tests |
 | `make migrations` | Check Alembic and ORM consistency |
 | `make docs` | Validate documentation links, images, and anchors |
-| `make check` | Run the main Python and documentation pipeline |
+| `make check` | Run the main Python and documentation quality gate |
 
 > [!IMPORTANT]
 > A fresh database contains no listings. Do not render and commit the README preview from empty local state.
 
 ## Validation paths
 
-Run every path affected by the change. Use the full cross-project sequence before releases or for changes spanning multiple components.
+Run every validation path affected by the change. `make check` covers the Python and documentation quality gate; website and container validation are separate. Use the full cross-project sequence before releases or for changes spanning multiple components.
 
 ### Python and documentation
 
@@ -126,7 +128,13 @@ uv lock --check
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy src tests scripts
-uv run pytest -m "not live and not performance" --cov
+uv run python -c "from pathlib import Path; Path('quality-reports').mkdir(exist_ok=True)"
+uv run pytest -m "not live and not performance" --cov \
+  --cov-report=term-missing \
+  --cov-report=xml:quality-reports/coverage.xml \
+  --cov-report=json:quality-reports/coverage.json \
+  --cov-report=html:quality-reports/coverage-html
+uv run python scripts/coverage_docs.py
 uv run python scripts/check_migrations.py
 uv run python scripts/check_docs.py
 git diff --check
@@ -173,7 +181,7 @@ uv run opportunities validate
 uv run pytest tests/integration/test_readme.py -q
 ```
 
-Generated files must be updated through their owning commands.
+Generated files must be updated through their owning commands rather than edited manually.
 
 ### Containers
 
@@ -192,7 +200,13 @@ uv lock --check
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy src tests scripts
-uv run pytest -m "not live and not performance" --cov
+uv run python -c "from pathlib import Path; Path('quality-reports').mkdir(exist_ok=True)"
+uv run pytest -m "not live and not performance" --cov \
+  --cov-report=term-missing \
+  --cov-report=xml:quality-reports/coverage.xml \
+  --cov-report=json:quality-reports/coverage.json \
+  --cov-report=html:quality-reports/coverage-html
+uv run python scripts/coverage_docs.py
 uv run pytest tests/benchmarks --benchmark-only
 uv run python scripts/check_migrations.py
 uv run python scripts/check_docs.py
@@ -246,17 +260,11 @@ Integration coverage includes:
 - README rendering and validation;
 - ORM and Alembic agreement.
 
-`make coverage` measures branch coverage for classification, collection orchestration,
-availability auditing, and repository lifecycle state. The combined threshold is 85%; terminal,
-XML, JSON, and HTML reports are written under the ignored `quality-reports/` directory. CI also
-publishes these files as a 30-day artifact and includes the coverage table in its job summary.
-The current measured values are summarized in the root
-[Python quality baseline](../../../README.md#python-quality-baseline).
+`make coverage` measures branch coverage for classification, collection orchestration, availability auditing, and repository lifecycle state. The combined threshold is 85%; terminal, XML, JSON, and HTML reports are written under the ignored `quality-reports/` directory.
 
-`make benchmark` runs two offline microbenchmarks against representative fixtures: LinkedIn
-search-page parsing and a complete classifier decision. Benchmark JSON is written to
-`quality-reports/benchmark.json` and published with the CI quality reports. Results are intended
-for trend comparison across equivalent runners, not as portable absolute timing guarantees.
+The command also refreshes the generated coverage badge and table in the root README from the JSON report, so it may intentionally modify `README.md`. CI requires the committed metrics to match its report, publishes the reports as a 30-day artifact, and includes the coverage table in its job summary. The current measured values are summarized in the root [Python quality baseline](../../../README.md#python-quality-baseline).
+
+`make benchmark` runs two offline microbenchmarks against representative fixtures: LinkedIn search-page parsing and a complete classifier decision. Benchmark JSON is written to `quality-reports/benchmark.json` and published with the CI quality reports. Results are intended for trend comparison across equivalent runners, not as portable absolute timing guarantees.
 
 Website changes must preserve read-only access, empty state, shareable URL filters, search, sorting, pagination, accessibility, responsive behavior, safe URLs, crawler metadata, and the production build. Playwright coverage should assert observable browser behavior against synthetic offline data.
 
@@ -297,13 +305,15 @@ These variables do not grant permission. CI does not run live tests, and an acce
 
 ## README and documentation changes
 
-The root README contains one opportunity-count marker pair and one opportunity-preview marker pair. The renderer owns the opportunity metadata, latest successful collection time, website link, and bounded previews of five internships and five New Grad opportunities.
+The root README contains one opportunity-count marker pair and one opportunity-preview marker pair. `src/opportunities/readme.py` owns the opportunity metadata, latest successful collection time, website link, and bounded previews of five internships and five New Grad opportunities.
 
-Do not edit either generated region or reproduce either complete marker pair in examples.
+Separate coverage markers surround the badge and quality table owned by `scripts/coverage_docs.py`. `make coverage` refreshes them from `quality-reports/coverage.json`, while CI uses `--check` to reject stale committed metrics.
+
+Do not edit any generated region or reproduce a complete marker pair in examples.
 
 Task-oriented Markdown belongs under `docs/guides/`; visual assets belong under `docs/assets/`. Contributor-facing documentation conventions are canonical in [`CONTRIBUTING.md`](../../../CONTRIBUTING.md#documentation-changes).
 
-Run:
+Validate documentation with:
 
 ```bash
 make docs
@@ -312,7 +322,7 @@ git diff --check
 
 ## Final review
 
-When changing packaging or containers:
+When packaging or container behavior changes, also run:
 
 ```bash
 uv build

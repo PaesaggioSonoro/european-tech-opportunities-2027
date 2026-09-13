@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 Troubleshooting Guide
 
-[← Documentation](../../README.md) · [CLI reference](../user-guide/cli.md) · [Database lifecycle](database.md)
+[← Documentation hub](../../README.md) · [CLI reference](../user-guide/cli.md) · [Database lifecycle](database.md) · [Automation](automation.md) · [Docker and deployment](docker.md) · [Security policy](../../../SECURITY.md)
 
-Start with the command’s exit code and first sanitized error. Preserve canonical state before making changes.
+This is the canonical troubleshooting guide for the project. Start with the command’s exit code and first sanitized error, and preserve canonical state before making changes.
 
 Do not delete SQLite, weaken classification rules, increase collection limits blindly, or bypass authorization as a shortcut.
 
@@ -50,8 +50,10 @@ Never paste a complete environment file, production database, authenticated HTML
 |---:|---|---|
 | `0` | Success | No recovery action required |
 | `1` | Complete collection failure or validation mismatch | Preserve state and inspect per-search or projection output |
-| `2` | Partial collection or invalid command/configuration | Separate successful work from the command-specific failure |
+| `2` | Partial collection or availability audit, or rejected configuration/command input | Preserve successful work and inspect the command-specific error |
 | `3` | Database missing tables or not at migration head | Run `db-upgrade` against the same database URL |
+
+Exit code `2` is intentionally overloaded by command context: collection uses it for partial success, the availability audit uses it when one or more checks are inconclusive, and configuration or selection errors also use it for rejected input.
 
 Command-specific behavior is documented in the [CLI reference](../user-guide/cli.md#exit-codes).
 
@@ -165,7 +167,7 @@ Typical causes:
 - overlapping collection and maintenance workflows;
 - another process holding a long write transaction.
 
-Stop the additional writer and return to the one-writer model.
+Stop the additional writer, preserve the current database and sidecars, and return to the one-writer model before retrying.
 
 ## README projection failures
 
@@ -180,14 +182,14 @@ uv run opportunities render
 uv run opportunities validate
 ```
 
-The generated block contains:
+The generated regions contain:
 
 - open-job metadata;
 - latest successful collection time;
 - the public website link;
 - at most five internships and five New Grad opportunities.
 
-Do not edit generated rows manually.
+Do not edit generated counts, timestamps, or rows manually; fix canonical state or the renderer instead.
 
 When mismatch remains, verify:
 
@@ -204,6 +206,24 @@ Atomic replacement requires a writable parent directory, not only a writable `RE
 In Docker, mount the repository directory rather than `README.md` as an individual file.
 
 Container permissions are documented in [Docker](docker.md#volume-permissions).
+
+### Coverage metrics are stale
+
+Python CI generates `quality-reports/coverage.json` from the current test run and then verifies that the committed README badge and table match it.
+
+Regenerate the report and both coverage regions from the repository root:
+
+```bash
+make coverage
+```
+
+When Make is unavailable, run the complete coverage command documented in [Development](../development/development.md#python-and-documentation), including the JSON report, then run:
+
+```bash
+uv run python scripts/coverage_docs.py
+```
+
+Use `uv run python scripts/coverage_docs.py --check` only after generating a current coverage report. Check mode verifies committed content without rewriting it. Never edit the coverage markers, badge, or table manually.
 
 ## Collection failures
 
@@ -296,7 +316,7 @@ Verify explicit evidence for every required rule:
 - internship or New Grad terminology in the title;
 - no configured seniority exclusion;
 - recognized technology category;
-- explicit 2027 cycle, or no conflicting cycle plus posting-date evidence on or after May 1, 2026;
+- explicit 2027 cycle, or no conflicting cycle year with posting-date evidence on or after May 1, 2026 serving as the yearless fallback;
 - explicit European location.
 
 Description or source employment metadata alone cannot convert a title without Internship or New Grad evidence into an accepted listing.
@@ -376,9 +396,20 @@ Do not manually rewrite timestamps or status values without preserving evidence.
 
 ## GitHub Actions and deployment
 
+### Docker image pull or Trivy scan fails
+
+First distinguish infrastructure failure from a vulnerability finding:
+
+- Docker exit code `125`, registry authentication errors, connection resets, and image or vulnerability-database download errors indicate that the scan could not run.
+- A completed Trivy report followed by exit code `1` indicates at least one fixable high or critical vulnerability and must be investigated.
+
+The workflow retries the immutable digest-pinned Trivy image pull three times with bounded delays. After an exhausted transient pull or database-download failure, wait for the registry to recover and rerun the failed workflow. If failures persist, inspect Docker Hub and Trivy database registry availability without printing credentials.
+
+Do not remove digest pins, disable Trivy, broaden vulnerability exclusions, or change the scan exit code to turn an infrastructure or security failure into success.
+
 ### Collection cache is missing
 
-Cache is only an accelerator. No manual action is needed when restricted VPS snapshot storage is healthy: the workflow downloads `latest.json`, verifies its timestamped SQLite file, and replaces the missing cache. It writes a new byte-identical cache only after round-trip restore verification.
+Cache is only an accelerator, never the durable source of truth. No manual action is needed when restricted VPS snapshot storage is healthy: the workflow downloads `latest.json`, verifies its timestamped SQLite file, and replaces the missing cache. It writes a new byte-identical cache only after round-trip restore verification.
 
 If both cache and `latest.json` are absent during initial rollout and the snapshot directory is empty, the workflow can seed from the live VPS database. If timestamped snapshots exist but the pointer is missing, automation stops so the pointer can be recovered instead of starting an unrelated history.
 
@@ -434,18 +465,29 @@ Check:
 
 Deployment sequencing is documented in [Automation](automation.md#vps-deployment).
 
-### State rebuild was requested unexpectedly
+### Migration or canonical-state validation fails
 
-`allow_state_rebuild=true` can discard incompatible restored state and sidecars.
+Collection workflows deliberately provide no state-rebuild input. They stop rather than deleting an incompatible restored database or its sidecars.
 
-Before allowing it:
+1. Preserve the failed state and stop additional writers.
+2. Review verified durable manifests and snapshots first, then retained artifacts, `opportunities.db.previous`, and finally cache accelerators.
+3. Verify the selected snapshot’s checksum, schema revision, integrity, and foreign keys.
+4. Restore it with the procedure in [Database lifecycle](database.md#restore).
 
-- confirm the run was intentional;
-- preserve the current VPS snapshot, artifact, and live database;
-- verify that no compatible timestamped snapshot or backup should be restored instead;
-- understand that first-seen history, provenance, closure evidence, and diagnostics will be lost.
+Do not initialize an empty database merely to make automation pass. An intentional manual rebuild loses first-seen history, provenance, closure evidence, and diagnostics. Recovery policy is documented in [Automation](automation.md#recovery-and-migration-failures).
 
-Recovery policy is documented in [Automation](automation.md#recovery-and-state-rebuilds).
+### Nightly pull request does not auto-merge
+
+Confirm that:
+
+- repository auto-merge is enabled;
+- branch protection defines the intended required checks;
+- the pull request targets `main`;
+- its head branch is `automated/nightly-full-update`;
+- its title is `data: nightly availability and scrape update`;
+- `README.md` is the only changed file.
+
+The workflow refuses auto-merge when any scope check differs. Do not weaken that check to merge unrelated changes; restore the fixed automation branch to the expected README-only diff instead.
 
 ## Docker failures
 
@@ -474,7 +516,7 @@ docker compose run --rm opportunities db-upgrade
 docker compose run --rm opportunities stats
 ```
 
-A newly created host state directory is expected to contain no listings.
+A fresh host state directory intentionally contains no listings.
 
 ### Website cannot read SQLite
 
@@ -483,7 +525,7 @@ Check:
 - the host state directory is mounted;
 - the website bind mount is read-only;
 - the database exists;
-- UID `10001` has read permission;
+- UID/GID `10001:10001` has read access through the configured host ownership or group mapping;
 - the configured path is `/app/data/opportunities.db`;
 - database and sidecars were not copied inconsistently.
 
@@ -528,7 +570,7 @@ Container setup and permissions are documented in [Docker and deployment](docker
 
 ## Requesting help
 
-A useful issue includes:
+Before opening an issue, reduce the problem to the smallest safe reproduction you can. A useful report includes:
 
 - exact command;
 - exit code;

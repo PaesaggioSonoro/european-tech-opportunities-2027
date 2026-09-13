@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 Configuration Guide
 
-[← Documentation](../../README.md) · [Installation](installation.md) · [CLI reference](../user-guide/cli.md)
+[← Documentation hub](../../README.md) · [Installation](installation.md) · [CLI reference](../user-guide/cli.md) · [Security policy](../../../SECURITY.md)
 
-This guide documents how the Python pipeline and Next.js website load configuration, how overrides are resolved, and which settings control paths, search limits, networking, lifecycle behavior, logging, and source authorization.
+This is the canonical configuration guide for the project. It documents how the Python pipeline and Next.js website load configuration, how overrides are resolved, and which settings control paths, search limits, networking, lifecycle behavior, logging, and source authorization.
 
 The pipeline builds one immutable Pydantic settings object before executing a command. Unknown fields and invalid values fail early instead of being silently ignored.
 
@@ -36,6 +36,7 @@ built-in defaults
 settings YAML
 ↓
 process environment
+(highest priority)
 </pre>
 </div>
 
@@ -88,7 +89,7 @@ Do not commit, paste, or attach them to public issues.
 | `OPPORTUNITIES_DATABASE_URL` | `sqlite:///data/opportunities.db` | Valid SQLite SQLAlchemy URL; other database backends are rejected |
 | `OPPORTUNITIES_SEARCH_CONFIG_DIR` | `configs/searches` | Recursive YAML search-registry directory |
 | `OPPORTUNITIES_CATEGORY_CONFIG_PATH` | `configs/categories.yml` | Classification-rules file |
-| `OPPORTUNITIES_README_PATH` | `README.md` | Existing UTF-8 file containing exactly one opportunity marker pair |
+| `OPPORTUNITIES_README_PATH` | `README.md` | Existing UTF-8 file containing exactly one opportunity-count marker pair and one opportunity-preview marker pair |
 | `OPPORTUNITIES_TARGET_CYCLE` | `2027` | Integer from 2020 through 2100 |
 | `OPPORTUNITIES_SETTINGS_FILE` | unset | Selects an optional settings YAML file |
 
@@ -125,7 +126,7 @@ Environment strings are converted into their declared types by Pydantic. Invalid
 
 ## Settings YAML
 
-Start from `configs/settings.example.yml`:
+Start from `configs/settings.example.yml`. The example below mirrors the supported settings in that file:
 
 ```yaml
 database_url: sqlite:///data/opportunities.db
@@ -144,6 +145,7 @@ max_response_bytes: 15000000
 
 closure_confirmation_runs: 2
 linkedin_crawl_authorized: false
+user_agent: european-tech-opportunities-2027/0.1 (+https://github.com/simonesiega/european-tech-opportunities-2027)
 log_level: INFO
 ```
 
@@ -194,7 +196,7 @@ For zero-based retry number `n`, the base delay is:
 retry_backoff_seconds × 2^n
 ```
 
-A valid `Retry-After` value can add at most 60 seconds.
+The retry delay is the greater of the exponential backoff and a valid `Retry-After` value, capped at 60 seconds.
 
 The transport also enforces:
 
@@ -251,6 +253,15 @@ Create the local website environment file:
 cd site
 cp .env.example .env.local
 ```
+
+For local development, set the values in `site/.env.local` to the local origin and database path:
+
+```dotenv
+SITE_URL=http://localhost:3000
+OPPORTUNITIES_DATABASE_PATH=../data/opportunities.db
+```
+
+`SITE_URL` falls back to `http://localhost:3000` when it is unset, while `OPPORTUNITIES_DATABASE_PATH` falls back to `../data/opportunities.db`.
 
 The production container reads:
 
@@ -327,7 +338,7 @@ Workflow behavior is documented in [Automation](../operations/automation.md#coll
 
 ## Validate configuration
 
-Verify the effective Python configuration:
+Verify that the effective Python configuration loads and that the expected search registry and database are selected:
 
 ```bash
 uv run opportunities stats

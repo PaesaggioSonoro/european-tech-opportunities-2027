@@ -1,8 +1,8 @@
 # European Tech Opportunities 2027 Architecture
 
-[← Documentation](../../README.md) · [Database lifecycle](../operations/database.md) · [Development guide](development.md)
+[← Documentation hub](../../README.md) · [Development guide](development.md) · [Database lifecycle](../operations/database.md) · [Security policy](../../../SECURITY.md)
 
-This guide explains the system’s data flow, component boundaries, invariants, failure isolation, canonical state model, and extension policy.
+This is the canonical architecture guide for the project. It defines the system’s data flow, component boundaries, invariants, failure isolation, canonical state model, and extension policy.
 
 ## Contents
 
@@ -21,7 +21,7 @@ This guide explains the system’s data flow, component boundaries, invariants, 
 
 ## Architecture at a glance
 
-The project has:
+The architecture is intentionally narrow:
 
 - one LinkedIn guest-HTML source adapter;
 - one deterministic classification pipeline;
@@ -47,10 +47,10 @@ normalization + deterministic classification
 ↓
 transactional SQLite lifecycle state
 ↓
-┌─────────┴─────────┐
-│                   │
-searchable website     README preview
-all open listings      5 latest rows/type
+┌──────────────────────┬──────────────────────┐
+│ searchable website   │ README preview       │
+│ all open listings    │ 5 latest rows/type   │
+└──────────────────────┴──────────────────────┘
 </pre>
 </div>
 
@@ -60,7 +60,7 @@ all open listings      5 latest rows/type
 |---|---|
 | Canonical identity | The numeric LinkedIn job ID uniquely identifies a listing |
 | Canonical state | SQLite is the only source of lifecycle truth |
-| Strict acceptance | Ambiguous cycle, role, seniority, or geography results in exclusion |
+| Strict acceptance | Listings require explicit target-cycle evidence or an eligible posting date as the yearless fallback; ambiguous employment type, cycle, role, seniority, or geography results in exclusion |
 | Safe closure | Search-page disappearance never closes a job |
 | One writer | Only the repository layer mutates canonical application state |
 | Isolated outcomes | One failed search cannot mutate another search’s lifecycle state |
@@ -92,7 +92,7 @@ These are design contracts, not implementation suggestions. Changes that violate
 
 ## Discovery is not acceptance
 
-Search results are candidates, not trusted records. They may be stale, unrelated, incorrectly ranked, duplicated across queries, or outside the project scope.
+Search results are discovery candidates, not trusted records. They may be stale, unrelated, incorrectly ranked, duplicated across queries, or outside the project scope.
 
 ```text
 Discovery       → RawJob candidates
@@ -126,10 +126,10 @@ Classification checks require evidence for:
 - exactly one normalized employment type: `internship` or `new-grad` (internship wins if both title signals appear);
 - absence of configured seniority exclusions;
 - a supported technology category;
-- either the explicit target cycle or no conflicting cycle plus eligible posting-date evidence;
+- cycle evidence: the explicit target cycle, or no conflicting cycle year with resolved posting-date evidence on or after May 1, 2026 as the yearless fallback;
 - a European location.
 
-Graduation-year eligibility language is not internship-cycle evidence. For title-explicit New Grad roles, a title or contextual opportunity year identifies the hiring cycle, so explicit 2025 or 2026 roles are rejected. A yearless listing is eligible only when its resolved posting date is May 1, 2026 or later. Malformed or ambiguous candidates are excluded without failing unrelated candidates.
+Graduation-year eligibility language is not internship-cycle evidence. For title-explicit New Grad roles, a title or contextual opportunity year identifies the hiring cycle, so explicit 2025 or 2026 roles are rejected. A listing with explicit target-cycle evidence does not require posting-age metadata; a yearless listing does. Known canonical jobs may be rechecked without treating missing current posting-age metadata as closure evidence. Malformed or ambiguous candidates are excluded without failing unrelated candidates.
 
 Search schema and pagination rules are documented in the [search registry guide](../user-guide/search-registry.md).
 
@@ -185,7 +185,7 @@ Schema, transactions, provenance, closure, migrations, backup, and restore are o
 
 ## Public projections
 
-Canonical SQLite state feeds two read-only projections.
+Canonical SQLite state feeds exactly two read-only public projections.
 
 ### Website
 
@@ -261,7 +261,7 @@ Exact authorization variables and network settings are documented in [Configurat
 
 ## Extension policy
 
-Good extensions preserve the existing boundaries. Examples include:
+Extensions that preserve the existing boundaries can normally be implemented without changing the architecture. Examples include:
 
 - focused search configuration;
 - stricter, tested classification signals;
@@ -271,7 +271,7 @@ Good extensions preserve the existing boundaries. Examples include:
 - safer migrations and recovery checks;
 - website accessibility, performance, and usability improvements.
 
-The following require an explicit architecture and security decision before implementation:
+The following change trust, ownership, or state boundaries and therefore require an explicit architecture and security decision before implementation:
 
 - additional job providers;
 - login, session, or browser-based collection;

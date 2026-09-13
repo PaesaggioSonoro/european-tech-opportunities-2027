@@ -1,42 +1,26 @@
-<h1 align="center">
-    Contributing to European Tech Opportunities 2027
-</h1>
+# Contributing to European Tech Opportunities 2027
 
-Thank you for improving the project. Read [`README.md`](README.md), follow the [Code of Conduct](CODE_OF_CONDUCT.md), and use the [documentation hub](docs/README.md) to find the canonical technical guide for your change.
+[← Project README](README.md) · [Documentation hub](docs/README.md) · [Security policy](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
+
+Thank you for contributing. This file is the contributor entry point; detailed setup, architecture, operation, and feature behavior live in the linked canonical guides.
 
 > [!IMPORTANT]
-> Never automate LinkedIn access while developing this project unless you have express permission. Public pages, environment flags, and an open-source contribution do not provide authorization.
+> LinkedIn access requires express authorization. Public pages, environment flags, and participation in this project do not grant permission.
 
-## Contents
+## Start here
 
-- [Getting started and contribution workflow](#getting-started-and-contribution-workflow)
-- [Choose your contribution path](#choose-your-contribution-path)
-- [Good contributions](#good-contributions)
-- [Issues and design changes](#issues-and-design-changes)
-- [Project boundaries](#project-boundaries)
-- [Code expectations](#code-expectations)
-- [Adding or changing a search](#adding-or-changing-a-search)
-- [Changing classification](#changing-classification)
-- [Changing LinkedIn parsing](#changing-linkedin-parsing)
-- [Database and migrations](#database-and-migrations)
-- [Website changes](#website-changes)
-- [Testing and validation](#testing-and-validation)
-- [Documentation changes](#documentation-changes)
-- [Pull requests](#pull-requests)
-- [Security and community](#security-and-community)
+1. Search existing issues and the [documentation hub](docs/README.md).
+2. Fork the repository and branch from `main`.
+3. Follow the [installation guide](docs/guides/getting-started/installation.md).
+4. Reproduce the issue offline and make one focused change.
+5. Add tests for observable behavior and run every affected validation path.
+6. Open a pull request that explains the problem, solution, safety impact, and validation performed.
 
-## Getting started and contribution workflow
+Recommended branch prefixes are `feat/`, `fix/`, `docs/`, `test/`, and `chore/`, followed by a short kebab-case description.
 
-| Step | Action |
-|---:|---|
-| 1 | Search existing issues and documentation. |
-| 2 | Fork the repository and create a branch from `main`. |
-| 3 | Follow the [installation guide](docs/guides/getting-started/installation.md) and install only the tools required for the change. |
-| 4 | Reproduce the issue offline where possible, then make one focused, testable change. |
-| 5 | Run the checks for every affected component. |
-| 6 | Open a pull request explaining the behavior, rationale, and validation. |
+### Local setup
 
-For Python development from the repository root:
+Python:
 
 ```bash
 uv sync --frozen --dev
@@ -44,7 +28,7 @@ cp .env.example .env
 uv run opportunities db-upgrade
 ```
 
-For website development:
+Website:
 
 ```bash
 cd site
@@ -52,276 +36,164 @@ bun install --frozen-lockfile
 bunx playwright install chromium
 ```
 
-Suggested branch names:
+Use the [installation guide](docs/guides/getting-started/installation.md) for complete setup, platform-specific instructions, Docker, and verification.
 
-| Change | Pattern | Example |
+## Choose the correct path
+
+| Change | Read first | Minimum validation |
 |---|---|---|
-| Feature | `feat/` | `feat/add-compiler-search` |
-| Bug fix | `fix/` | `fix/linkedin-location-parser` |
-| Documentation | `docs/` | `docs/clarify-lifecycle` |
-| Maintenance | `chore/` | `chore/update-dependencies` |
-| Tests | `test/` | `test/add-pagination-coverage` |
+| Python, CLI, classification, persistence | [Development](docs/guides/development/development.md) | `make check` or its documented `uv` equivalent |
+| Website | [Website](docs/guides/user-guide/website.md) | `cd site && bun run ci` |
+| Search YAML | [Search registry](docs/guides/user-guide/search-registry.md) | Registry command and config tests |
+| Schema or migration | [Database](docs/guides/operations/database.md) | Fresh and representative upgrades plus migration checks |
+| Docker or automation | [Docker](docs/guides/operations/docker.md) and [Automation](docs/guides/operations/automation.md) | Compose validation and affected build or runtime checks |
+| Documentation only | [Documentation hub](docs/README.md) | Documentation validation and `git diff --check` |
 
-Use the [installation guide](docs/guides/getting-started/installation.md) for platform-specific setup and the [development guide](docs/guides/development/development.md) for repository structure, implementation details, test organization, and complete validation commands.
+Discuss changes to architecture, source access, canonical identity, lifecycle rules, schema design, deployment, or trust boundaries before implementation. Small fixes and documentation improvements can normally go directly to a pull request.
 
-## Choose your contribution path
-
-| Change | Canonical guide | Minimum validation |
-|---|---|---|
-| Python pipeline, CLI, classification, or persistence | [Development](docs/guides/development/development.md) | `make check` or its documented `uv` equivalent |
-| Website or UI | [Website](docs/guides/user-guide/website.md) and [Development](docs/guides/development/development.md) | `cd site && bun run ci` |
-| Search configuration | [Search registry](docs/guides/user-guide/search-registry.md) | `uv run opportunities searches` and focused config tests |
-| Database schema or migrations | [Database and lifecycle](docs/guides/operations/database.md) | Migration consistency and upgrade tests |
-| Documentation only | [Documentation hub](docs/README.md) | Documentation checks and `git diff --check` |
-| Docker or deployment | [Docker](docs/guides/operations/docker.md) and [Automation](docs/guides/operations/automation.md) | Image or Compose checks for the affected path |
-
-Run broader checks when a change crosses component boundaries. Documentation-only changes do not require unrelated package builds, migrations, or application tests.
-
-## Good contributions
-
-High-value contributions include:
-
-- correcting strict posting-date, internship/New Grad type, cycle, technology, seniority, or geography classification;
-- adding a focused role, employer, or country search with justified limits;
-- improving parser resilience with sanitized fixture HTML;
-- strengthening database lifecycle, migration, or recovery safety;
-- improving deterministic error handling and observability;
-- improving website accessibility, responsiveness, usability, or performance;
-- expanding offline regression coverage;
-- correcting documentation without weakening responsible-operation requirements.
-
-Additional providers, authenticated or browser-based collection, private endpoints, concurrent writers, user-submitted data, and new canonical output formats are outside the current architecture. Discuss them before implementation.
-
-## Issues and design changes
-
-Search [existing issues](https://github.com/simonesiega/european-tech-opportunities-2027/issues) before opening a duplicate. Use the repository’s issue forms for listing suggestions, bug reports, and feature requests; security reports belong in a private GitHub security advisory.
-
-A useful bug report includes:
-
-| Field | What to provide |
-|---|---|
-| Expected behavior | The result or state transition that should occur |
-| Actual behavior | What happened instead |
-| Reproduction | Minimal offline steps, command, slug, or sanitized fixture |
-| Environment | OS, runtime and package-manager versions, and project commit |
-| Diagnostics | First sanitized error or exit code |
-
-Open an issue before substantial changes to architecture, source-access policy, canonical identity, lifecycle behavior, schema design, classification policy, deployment, or trust boundaries.
-
-Small tests, documentation fixes, focused parser corrections, and well-scoped search additions can normally go directly to a pull request.
-
-Security vulnerabilities must be reported privately through [`SECURITY.md`](SECURITY.md).
-
-## Project boundaries
-
-The supported data flow is:
-
-<div align="center">
-<pre>
-permission-gated LinkedIn guest HTML
-↓
-strict deterministic classification
-↓
-canonical transactional SQLite state
-↓
-read-only website + bounded README preview
-</pre>
-</div>
+## Project contracts
 
 Preserve these invariants:
 
-1. **SQLite is canonical.** README rows and browser state are never lifecycle sources.
-2. **Numeric job IDs are canonical identities.** Similar display fields do not merge distinct IDs.
-3. **Acceptance remains strict.** Ambiguous posting date, employment type, role, seniority, or geography means exclusion for new listings; a missing cycle is allowed only for an eligible posting date, while a conflicting explicit cycle is rejected.
-4. **Closure remains conservative.** Search-page absence cannot close a job.
-5. **Search outcomes remain isolated.** A failed search cannot mutate that search’s lifecycle state.
-6. **The README remains bounded.** It contains one opportunity-count marker pair, one opportunity-preview marker pair, and at most five internships plus five New Grad opportunities.
-7. **Source access remains permission-gated and unauthenticated.**
-8. **Requests and processing remain bounded and deterministic.**
-9. **The website remains a read-only projection.**
-10. **The supported workflow retains one canonical writer.**
+1. SQLite is the lifecycle source of truth.
+2. Numeric LinkedIn job IDs are canonical identities.
+3. Ambiguous type, role, seniority, cycle, or geography is excluded; a yearless listing also requires eligible posting-date evidence.
+4. Search-page disappearance never closes a listing.
+5. Failed searches do not mutate that search's lifecycle state.
+6. The repository layer is the sole application writer.
+7. Requests and processing remain authorized, unauthenticated, bounded, and deterministic.
+8. The website and bounded README remain read-only projections.
 
-Read the [architecture guide](docs/guides/development/architecture.md) before changing these contracts.
+Do not add credentials, sessions, browser automation, private APIs, CAPTCHA handling, proxy evasion, concurrent writers, mutation APIs, or user-submitted data without explicit architecture and security review.
+
+See [Architecture](docs/guides/development/architecture.md) and the [Security policy](SECURITY.md) for the complete trust and component boundaries.
 
 ## Code expectations
 
-Keep changes small, typed, deterministic, and easy to review.
+- Keep business behavior under `src/opportunities/`, not workflows or ad-hoc scripts.
+- Keep transport, parsing, classification, persistence, and presentation separate.
+- Use repository methods for writes and Alembic for schema evolution.
+- Keep Python strictly typed and TypeScript strict.
+- Use UTC-aware timestamps and deterministic ordering.
+- Reject unknown external input where appropriate.
+- Sanitize errors; never log response bodies, credentials, cookies, headers, or environment dumps.
+- Avoid broad lint, type, test, or coverage suppressions.
+- Keep changes focused and avoid unrelated cleanup.
 
-| Area | Expectation |
-|---|---|
-| CLI | Keep orchestration, output, and exit-code behavior in the CLI layer; put business rules elsewhere |
-| Configuration | Validate external input and reject unknown fields |
-| Collection | Keep transport policy separate from LinkedIn parsing |
-| Classification | Preserve deterministic decisions and stable exclusion reasons |
-| Persistence | Use repository methods, short transactions, and Alembic migrations |
-| Rendering | Preserve one marker pair, atomic replacement, and the bounded preview |
-| Website | Preserve read-only SQLite access, strict TypeScript, accessibility, and safe links |
-| Errors | Expose sanitized categories, never raw response bodies or secret context |
-| Tests | Add a regression test for every behavior change; keep tests offline by default |
+## Data collection and classification
 
-Use UTC-aware timestamps, UTF-8, LF endings, and the project’s Ruff and Prettier formatting. Do not add broad type, lint, or test suppressions to avoid fixing a real issue.
+### Adding or changing a search
 
-## Adding or changing a search
-
-The [search registry guide](docs/guides/user-guide/search-registry.md) is the canonical reference for YAML fields, query identity, directory conventions, pagination, and limit tiers.
-
-A search contribution must:
+Follow the [search registry guide](docs/guides/user-guide/search-registry.md). A search must:
 
 - use the correct role, company, or country directory;
-- keep a stable, unique lowercase kebab-case slug;
-- use an effective query identity not already present;
-- include the standard internship and New Grad query terms without a year restriction;
-- use the dynamic `cycle` posting filter to cover every listing since May 1, 2026;
-- use exact normalized company names for employer searches;
-- avoid invented geography IDs;
-- start with the smallest defensible request tier;
-- explain scope and tuning in `notes`;
-- update category mapping and tests when introducing a role category.
+- have a stable, unique lowercase kebab-case slug and query identity;
+- include Internship and New Grad terms without requiring a year;
+- use the dynamic `cycle` posting filter;
+- use exact normalized employer names where applicable;
+- use only independently verified geography IDs;
+- start with the smallest defensible limits;
+- explain scope and tuning in `notes`.
 
-Run:
+Validate with:
 
 ```bash
 uv run opportunities searches
-uv run pytest tests/unit/test_config.py
+uv run pytest tests/unit/test_config.py -q
 ```
 
-An authorized maintainer may additionally run one non-persisting preview:
+An authorized maintainer may additionally run `uv run opportunities search-test <slug>`. Reviewers and CI must not require live LinkedIn access.
 
-```bash
-uv run opportunities search-test <slug>
-```
+### Changing classification
 
-Do not require reviewers or CI to contact LinkedIn.
+Classification rules live in `configs/categories.yml`; deterministic logic lives in `src/opportunities/pipeline/classification.py`.
 
-## Changing classification
+Add nearby acceptance and rejection tests. Preserve:
 
-Classification configuration lives in [`configs/categories.yml`](configs/categories.yml); deterministic logic lives in [`src/opportunities/pipeline/classification.py`](src/opportunities/pipeline/classification.py).
+- title-explicit Internship or New Grad evidence;
+- seniority and technology-role exclusions;
+- explicit target-cycle acceptance, yearless acceptance only with the May 1, 2026 posting-date floor, and conflicting-cycle rejection;
+- explicit European geography;
+- stable exclusion reasons.
 
-A classification change must:
+Do not weaken a global rule to admit one ambiguous listing.
 
-1. describe the false positive or false negative;
-2. add nearby acceptance and rejection tests;
-3. preserve title-explicit Internship or New Grad evidence and deterministic type assignment;
-4. preserve explicit target-cycle evidence;
-5. preserve explicit European geography;
-6. verify that senior and non-technical roles remain excluded;
-7. update category and search-registry tests when adding a role path.
+### Changing LinkedIn parsing
 
-Do not weaken a global rule solely to include one ambiguous listing. Precision is an intentional product decision.
+Use the smallest sanitized fixture that preserves the relevant guest-page structure. Use synthetic IDs and remove personal, tracking, authenticated, and unrelated data.
 
-## Changing LinkedIn parsing
+Preserve challenge detection, response limits, title prefiltering, and explicit unavailability handling. Test changed, malformed, and missing-field cases.
 
-Parser changes must use local sanitized fixtures and preserve the bounded public-HTML collection model.
-
-- Reduce the example to the smallest structural HTML required.
-- Use synthetic job IDs and remove tracking or personal data.
-- Never commit credentials, cookies, headers, account identifiers, full browser captures, or authenticated HTML.
-- Do not add login flows, browser automation, CAPTCHA services, private endpoints, proxy rotation, fingerprint evasion, or anti-bot bypasses.
-- Preserve challenge detection, title prefiltering, response bounds, and explicit unavailability handling.
-- Ensure malformed markup fails safely without corrupting persisted state.
-- Add regression coverage for changed and missing-field cases.
-
-When a live variation cannot be represented safely, describe the structure privately without sharing sensitive source material.
+Never commit full pages, credentials, cookies, headers, browser captures, or authenticated HTML. Do not implement login, browser automation, CAPTCHA services, private endpoints, proxy rotation, fingerprint evasion, or anti-bot bypasses. An upstream challenge is a stop condition.
 
 ## Database and migrations
 
-The [database and lifecycle guide](docs/guides/operations/database.md) is the canonical reference for schema, provenance, closure, migrations, backups, and restoration.
+Follow the [database guide](docs/guides/operations/database.md). A schema change must:
 
-A persisted-schema change must:
+1. update the SQLAlchemy models;
+2. add a new Alembic revision without rewriting applied history;
+3. preserve lifecycle state and provide a practical downgrade;
+4. add repository and migration tests;
+5. test fresh and representative prior databases;
+6. pass migration consistency checks.
 
-- update the SQLAlchemy models;
-- add a new Alembic revision;
-- preserve existing lifecycle state;
-- provide a practical downgrade where possible;
-- add repository and migration tests;
-- test a fresh database;
-- test a representative backup when existing state changes;
-- pass the migration consistency check.
-
-Never rewrite an applied migration, commit `data/opportunities.db`, or ask users to delete canonical state as the default upgrade strategy.
+Never commit SQLite state or recommend deleting canonical state as the normal upgrade path.
 
 ## Website changes
 
-Website contributions must preserve:
+Follow the [website guide](docs/guides/user-guide/website.md).
 
-- read-only SQLite access;
-- valid empty-state behavior;
-- search, filters, sorting, and pagination;
-- responsive layouts;
-- semantic HTML and keyboard accessibility;
-- safe public HTTPS listing links;
-- Tailwind utility-based component styling and minimal global CSS;
-- strict TypeScript and production build behavior.
+Preserve read-only server-side SQLite access, empty states, search, filters, sorting, pagination, shareable URLs, safe HTTPS links, responsive behavior, semantic HTML, keyboard access, and strict TypeScript.
 
-Run:
+Keep data helpers under `site/src/lib`, browser interaction in client components, Tailwind utilities in components, and global CSS minimal.
 
-```bash
-cd site
-bun run ci
-```
-
-Authentication, forms, user-provided content, write APIs, saved user data, or administrative mutation paths require an explicit architecture and security review before implementation.
+Authentication, forms, saved data, write APIs, or administrative mutation require prior architecture and security review.
 
 ## Testing and validation
 
-Use the [development guide](docs/guides/development/development.md) for complete validation paths and focused commands.
+Start with the narrowest relevant test, then run the complete affected gate.
 
-General expectations:
+| Change | Focused test |
+|---|---|
+| Search configuration | `uv run pytest tests/unit/test_config.py -q` |
+| Classification | `uv run pytest tests/unit/test_classification.py -q` |
+| Parsing or transport | `uv run pytest tests/unit/test_linkedin.py tests/unit/test_http.py -q` |
+| Collection or lifecycle | `uv run pytest tests/integration/test_runner.py tests/integration/test_availability.py -q` |
+| README rendering | `uv run pytest tests/integration/test_readme.py -q` |
+| Models or migrations | `uv run pytest tests/unit/test_models.py tests/unit/test_migrations.py -q` |
+| Website | `cd site && bun run ci` |
 
-- run checks for every affected component;
-- keep unit and integration tests deterministic and offline;
-- use temporary paths, synthetic IDs, fixed timestamps, and injected fetchers;
-- test meaningful state and observable behavior;
-- add parser fixtures for markup changes;
-- test success and failure isolation for lifecycle changes;
-- test fresh and representative databases for migrations;
-- update generated files only through their owning commands.
+Tests must be offline and deterministic by default, assert observable behavior, use synthetic state, and cover relevant success and failure paths.
 
-Common minimum checks (use the equivalent direct `uv` sequence in the development guide when GNU Make is unavailable):
+Run the full Python and documentation gate with:
 
 ```bash
 make check
 ```
 
-`make check` enforces the critical Python lifecycle/classification coverage threshold. Run
-`make benchmark` as well when changing parsing, normalization, or classification hot paths.
+If Make is unavailable, use the exact commands in [Development](docs/guides/development/development.md#python-and-documentation). Run `make benchmark` for parser, normalization, or classifier hot paths.
 
-```bash
-cd site && bun run ci
-```
+Docker changes additionally require:
 
 ```bash
 docker compose config
+docker compose build
+docker compose run --rm opportunities --help
 ```
 
-Do not render and commit the README preview from an empty development database.
-
-Live tests remain disabled unless both safety variables are explicitly enabled, and those variables still do not provide permission.
+Do not claim a check passed unless it ran. Explain omissions in the pull request. Live tests require deliberate selection and express authorization; environment interlocks do not grant permission.
 
 ## Documentation changes
 
-Task-oriented guides live under `docs/guides/`, and visual assets live under `docs/assets/`. Update the canonical guide whenever behavior changes instead of copying complete procedures into multiple files.
+Keep task guides under `docs/guides/` and assets under `docs/assets/`. Link to the canonical guide instead of duplicating procedures.
 
-Documentation changes must:
+- Preserve README generated markers and never edit generated counts, timestamps, rows, or coverage metrics manually.
+- Render opportunity data only from representative canonical state; refresh coverage metrics with `make coverage`.
+- Keep commands executable from their documented directory.
+- Use repository-relative links, stable anchors, descriptive alt text, and sanitized assets.
+- Keep claims aligned with implemented behavior and safety boundaries.
 
-- use repository-relative links for repository content;
-- link to the canonical guide rather than duplicate its complete procedure;
-- preserve the root README's generated opportunity-count and opportunity-preview markers;
-- never manually edit generated opportunity counts, timestamps, or rows;
-- keep commands executable from their documented working directory;
-- keep referenced heading anchors stable;
-- use descriptive image alt text;
-- use only sanitized images and fixtures without credentials, cookies, personal data, authenticated HTML, private paths, or operational secrets;
-- store screenshots and other visual documentation under `docs/assets/` in the appropriate existing subdirectory;
-- preserve authorization, conservative lifecycle, and one-writer safety semantics in examples;
-- keep public claims aligned with implemented behavior;
-- run documentation validation after changes.
-
-For visible website changes, provide sanitized screenshots only when they help reviewers understand a meaningful interface change. Prefer WebP for new raster documentation assets, show relevant responsive or theme states, and avoid adding decorative or redundant images.
-
-Never reproduce either complete generated marker pair in examples. Update generated files only through their owning command and representative canonical state.
-
-Run:
+Validate documentation with:
 
 ```bash
 uv run python scripts/check_docs.py
@@ -330,44 +202,28 @@ git diff --check
 
 ## Pull requests
 
-Use a concise title such as:
+Use a concise conventional title, such as `fix: preserve pagination after filtered cards`.
 
-```text
-fix: preserve pagination after filtered search cards
-feat: add bounded compiler internship search
-docs: clarify closure confirmation behavior
+The description must cover:
+
+- what changed and why;
+- what is intentionally out of scope;
+- lifecycle, source-access, privacy, security, and compatibility impact;
+- exact checks run and any omitted checks;
+- documentation, migration, lockfile, or screenshot changes where applicable.
+
+Complete the repository pull-request template. Before review, inspect:
+
+```bash
+git status --short
+git diff --check
+git diff
 ```
 
-Complete every applicable section and check in the repository pull-request template. The pull request description should explain:
-
-- what changed;
-- why the previous behavior was insufficient;
-- safety, lifecycle, or compatibility implications;
-- tests and checks performed;
-- documentation updated;
-- whether any authorized manual validation occurred.
-
-Before requesting review, confirm:
-
-- [ ] The change is focused and contains no unrelated cleanup.
-- [ ] The title and description explain behavior and rationale.
-- [ ] Architecture and lifecycle invariants remain intact.
-- [ ] Tests were added or updated for behavior changes.
-- [ ] Checks for every affected component pass.
-- [ ] Schema changes include a new migration and migration tests.
-- [ ] Search limits remain justified and bounded.
-- [ ] Documentation matches implemented behavior.
-- [ ] Generated files were updated through their owning commands.
-- [ ] No `.env`, database, credential, cookie, private HTML, or build artifact is staged.
-- [ ] No unauthorized live LinkedIn access was performed.
-- [ ] Lockfiles changed only when their corresponding dependencies or metadata changed.
-
-Maintainers may request a smaller pull request when unrelated parser, schema, configuration, website, and documentation changes are combined.
+Ensure no `.env`, database, sidecar, credential, cookie, private HTML, log, cache, report, or build artifact is included.
 
 ## Security and community
 
-Report vulnerabilities, authorization bypasses, unsafe network behavior, state-corruption paths, or sensitive-data exposure privately through [`SECURITY.md`](SECURITY.md). Do not include vulnerability details in a public issue or pull request.
+Report vulnerabilities privately through the [Security policy](SECURITY.md), not an issue or pull request.
 
-All project interactions must follow the [Code of Conduct](CODE_OF_CONDUCT.md). Conduct reports and security vulnerabilities use separate private reporting processes; follow the policy appropriate to the issue.
-
-Thanks for contributing responsibly.
+All participation must follow the [Code of Conduct](CODE_OF_CONDUCT.md).

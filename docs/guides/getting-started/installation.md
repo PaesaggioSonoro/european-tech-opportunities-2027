@@ -1,10 +1,10 @@
 # European Tech Opportunities 2027 Installation Guide
 
-[← Documentation](../../README.md) · [Configuration](configuration.md) · [Open the opportunity directory](https://opportunities2027.simonesiega.com/)
+[← Documentation hub](../../README.md) · [Configuration](configuration.md) · [CLI reference](../user-guide/cli.md) · [Development guide](../development/development.md) · [Open the opportunity directory](https://opportunities2027.simonesiega.com/)
 
 You do not need to install the project to browse internships. Use the [live directory](https://opportunities2027.simonesiega.com/).
 
-This guide covers local installation, database initialization, the first website launch, and basic verification. Runtime settings, production operation, and contribution procedures belong to their dedicated guides.
+This is the canonical installation guide for the project. It covers local installation, database initialization, the first website launch, and basic verification. Runtime settings, production operation, and contribution procedures belong to their dedicated guides.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ node --version
 bun --version
 ```
 
-Docker is not required for ordinary local Python or website development.
+Docker is not required for ordinary local Python or website development. Installation, local website development, and the default test paths require no LinkedIn access.
 
 ## Clone the repository
 
@@ -90,7 +90,7 @@ The default database is created at:
 data/opportunities.db
 ```
 
-A new local database is expected to contain no listings. Use the hosted directory for current public data.
+A new local database intentionally contains no listings. Use the hosted directory for current public data.
 
 > [!IMPORTANT]
 > Do not render and commit the README preview from an empty local database. Exact projection rendering requires representative canonical state.
@@ -102,12 +102,6 @@ Install the website dependencies:
 ```bash
 cd site
 bun install --frozen-lockfile
-```
-
-Install Chromium once for the complete Playwright validation path:
-
-```bash
-bunx playwright install chromium
 ```
 
 Create the website environment file.
@@ -130,6 +124,13 @@ Windows PowerShell:
 Copy-Item .env.example .env.local
 ```
 
+For local development, make sure `site/.env.local` uses the local origin:
+
+```dotenv
+SITE_URL=http://localhost:3000
+OPPORTUNITIES_DATABASE_PATH=../data/opportunities.db
+```
+
 Start the development server:
 
 ```bash
@@ -144,7 +145,7 @@ http://localhost:3000
 
 The website reads SQLite in read-only mode. An empty directory is valid when the local database contains no open listings.
 
-Return to the repository root when finished:
+After stopping the development server, return to the repository root:
 
 ```bash
 cd ..
@@ -160,10 +161,16 @@ uv run opportunities stats
 uv run pytest -m "not live and not performance"
 ```
 
-Verify the website:
+Install Chromium once before running the complete website validation path:
 
 ```bash
 cd site
+bunx playwright install chromium
+```
+
+Then verify the website:
+
+```bash
 bun run ci
 cd ..
 ```
@@ -174,6 +181,6 @@ The complete engineering validation matrix is documented in the [development gui
 
 ## Docker
 
-Docker is optional for local development.
+Docker is optional for local development and is not required to run either the Python project or the website directly.
 
 For image builds, Compose services, volumes, permissions, local container access, and Dokploy deployment, use the [Docker and deployment guide](../operations/docker.md).
