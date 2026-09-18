@@ -23,6 +23,7 @@ def cli_env(tmp_path: Path) -> dict[str, str]:
         "OPPORTUNITIES_SEARCH_CONFIG_DIR": str(ROOT / "configs" / "searches"),
         "OPPORTUNITIES_CATEGORY_CONFIG_PATH": str(ROOT / "configs" / "categories.yml"),
         "OPPORTUNITIES_README_PATH": str(tmp_path / "README.md"),
+        "OPPORTUNITIES_PUBLIC_EXPORT_DIR": str(tmp_path / "exports"),
         "OPPORTUNITIES_LINKEDIN_CRAWL_AUTHORIZED": "true",
         "OPPORTUNITIES_RATE_LIMIT_SECONDS": "0",
     }
@@ -49,6 +50,8 @@ def test_database_render_stats_and_validate_commands(tmp_path: Path) -> None:
     assert before.exit_code == 3
 
     assert runner.invoke(app, ["db-upgrade"], env=environment).exit_code == 0
+    exported = runner.invoke(app, ["export-public"], env=environment)
+    assert exported.exit_code == 0, exported.output
     rendered = runner.invoke(app, ["render"], env=environment)
     assert rendered.exit_code == 0, rendered.output
     availability = runner.invoke(app, ["check-availability"], env=environment)
@@ -57,6 +60,8 @@ def test_database_render_stats_and_validate_commands(tmp_path: Path) -> None:
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     assert "| Company | Title | Location | Listing |" in readme
     assert "# 23 technology paths" in docs_path.read_text(encoding="utf-8")
+    assert (tmp_path / "exports" / "open-opportunities.csv").is_file()
+    assert (tmp_path / "exports" / "open-opportunities.json").is_file()
 
     statistics = runner.invoke(app, ["stats"], env=environment)
     assert statistics.exit_code == 0
@@ -76,7 +81,14 @@ def test_searches_works_without_database(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "command",
-    [("scrape",), ("check-availability",), ("render",), ("stats",), ("validate",)],
+    [
+        ("scrape",),
+        ("check-availability",),
+        ("render",),
+        ("export-public",),
+        ("stats",),
+        ("validate",),
+    ],
 )
 def test_database_engine_is_disposed_when_migration_check_fails(
     tmp_path: Path,

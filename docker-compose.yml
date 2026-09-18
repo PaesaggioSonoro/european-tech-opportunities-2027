@@ -15,6 +15,7 @@ services:
       OPPORTUNITIES_SEARCH_CONFIG_DIR: /app/configs/searches
       OPPORTUNITIES_CATEGORY_CONFIG_PATH: /app/configs/categories.yml
       OPPORTUNITIES_README_PATH: /workspace/README.md
+      OPPORTUNITIES_PUBLIC_EXPORT_DIR: /app/data/exports
       OPPORTUNITIES_LINKEDIN_CRAWL_AUTHORIZED: "${OPPORTUNITIES_LINKEDIN_CRAWL_AUTHORIZED:-false}"
 
     volumes:
@@ -40,6 +41,7 @@ services:
     environment:
       SITE_URL: "${SITE_URL:-https://opportunities2027.simonesiega.com}"
       OPPORTUNITIES_DATABASE_PATH: /app/data/opportunities.db
+      OPPORTUNITIES_PUBLIC_EXPORT_DIR: /app/data/exports
 
     volumes:
       # Defense in depth: website code cannot mutate canonical lifecycle state.

@@ -56,7 +56,7 @@
   />
 </p>
 
-The public directory has surpassed **1,000 unique visitors across 50+ countries since launch**. Search hundreds of validated opportunities by company, country, category, and employment type, with sortable results, pagination, shareable filters, and direct links to the original listings.
+The public directory has surpassed **1,000 unique visitors across 50+ countries since launch**. Search hundreds of validated opportunities by company, country, category, and employment type, with sortable results, pagination, shareable filters, direct links to the original listings, and sanitized [CSV](https://opportunities2027.simonesiega.com/open-opportunities.csv) and [JSON](https://opportunities2027.simonesiega.com/open-opportunities.json) downloads.
 
 ## Why this exists
 
@@ -111,7 +111,7 @@ Missing a relevant opportunity? [Suggest a listing](https://github.com/simonesie
 - **TypeScript web application:** server-rendered Next.js directory with search, filters, sorting, pagination, and shareable URLs.
 - **Canonical lifecycle state:** SQLite tracks provenance, first/last-seen timestamps, isolated search outcomes, conservative closure evidence, and daily availability checks.
 - **Production-grade validation:** strict typing, unit and integration tests, Playwright end-to-end tests, branch coverage gates, and parsing/classification benchmarks.
-- **Automated operations:** Alembic migrations, scheduled collection, availability checks, restore-verified backups, CI, and atomic deployment.
+- **Automated operations:** Alembic migrations, scheduled collection, availability checks, sanitized public CSV/JSON exports, restore-verified backups, CI, and atomic deployment.
 
 ## How it works
 
@@ -125,14 +125,14 @@ normalization + deterministic classification
 ↓
 transactional SQLite lifecycle state
 ↓
-┌──────────────────────┬──────────────────────┐
-│ searchable website   │ README preview       │
-│ all open listings    │ 5/type latest rows   │
-└──────────────────────┴──────────────────────┘
+┌──────────────────────┬──────────────────────┬──────────────────────┐
+│ searchable website   │ README preview       │ public CSV + JSON    │
+│ all open listings    │ 5/type latest rows   │ approved fields only │
+└──────────────────────┴──────────────────────┴──────────────────────┘
 </pre>
 </div>
 
-SQLite is the canonical store. The website and README are read-only projections of accepted listings and their lifecycle state.
+SQLite is the canonical store. The website, README, and sanitized downloads are read-only projections; none can mutate lifecycle state.
 
 See the [architecture guide](docs/guides/development/architecture.md) for the complete data flow, component boundaries, and extension policy.
 

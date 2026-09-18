@@ -27,9 +27,9 @@ The architecture is intentionally narrow:
 - one deterministic classification pipeline;
 - one canonical SQLite state store;
 - one controlled application writer;
-- two read-only public projections.
+- three read-only public projections.
 
-The website is the complete public directory. The README contains only a bounded preview.
+The website is the complete public directory. The README contains only a bounded preview, while sanitized CSV and JSON files expose all open rows through a fixed public-field allowlist.
 
 ## System flow
 
@@ -47,10 +47,10 @@ normalization + deterministic classification
 ↓
 transactional SQLite lifecycle state
 ↓
-┌──────────────────────┬──────────────────────┐
-│ searchable website   │ README preview       │
-│ all open listings    │ 5 latest rows/type   │
-└──────────────────────┴──────────────────────┘
+┌──────────────────────┬──────────────────────┬──────────────────────┐
+│ searchable website   │ README preview       │ public CSV + JSON    │
+│ all open listings    │ 5 latest rows/type   │ approved fields only │
+└──────────────────────┴──────────────────────┴──────────────────────┘
 </pre>
 </div>
 
@@ -66,7 +66,7 @@ transactional SQLite lifecycle state
 | Isolated outcomes | One failed search cannot mutate another search’s lifecycle state |
 | Bounded access | Requests, responses, retries, concurrency, pages, and result counts remain limited |
 | Deterministic behavior | Classification, persistence, rendering, and validation are reproducible |
-| Read-only projections | The website and README never classify jobs or mutate lifecycle state |
+| Read-only projections | The website, README, and public exports never classify jobs or mutate lifecycle state |
 | No privileged source access | The project does not use credentials, sessions, browsers, private endpoints, or anti-bot bypasses |
 
 These are design contracts, not implementation suggestions. Changes that violate them require an explicit architecture and security decision.
@@ -87,7 +87,8 @@ These are design contracts, not implementation suggestions. Changes that violate
 | Repository | `src/opportunities/database/repository.py` | Transactions, provenance, lifecycle transitions, and statistics |
 | ORM and migrations | `src/opportunities/database/` and `migrations/` | Current schema intent and upgrade history |
 | README renderer | `src/opportunities/readme.py` | Deterministic bounded projection and atomic replacement |
-| Website | `site/src/` | Read-only server queries and client-side directory interaction |
+| Public export renderer | `src/opportunities/public_exports.py` | Whitelisted CSV/JSON serialization, spreadsheet safety, validation, and atomic replacement |
+| Website | `site/src/` | Read-only server queries, export delivery, and client-side directory interaction |
 | Tests | `tests/` | Offline unit, integration, migration, rendering, lifecycle coverage, and performance benchmarks |
 
 ## Discovery is not acceptance
@@ -98,7 +99,7 @@ Search results are discovery candidates, not trusted records. They may be stale,
 Discovery       → RawJob candidates
 Classification  → accepted DiscoveredJob values
 Persistence     → canonical jobs and lifecycle evidence
-Projection      → website and README
+Projection      → website, README, and public CSV/JSON exports
 ```
 
 The search that found a listing establishes provenance. It does not prove that the listing is a valid 2027 European technology internship or New Grad opportunity.
@@ -185,7 +186,7 @@ Schema, transactions, provenance, closure, migrations, backup, and restore are o
 
 ## Public projections
 
-Canonical SQLite state feeds exactly two read-only public projections.
+Canonical SQLite state feeds exactly three read-only public projections.
 
 ### Website
 
@@ -212,6 +213,20 @@ The renderer owns the marked opportunity-count and opportunity-preview regions a
 
 The README cannot reconstruct canonical state because it omits most jobs, closed state, provenance, run history, and closure evidence.
 
+### Public CSV and JSON exports
+
+The pipeline atomically generates `open-opportunities.csv` and `open-opportunities.json` from all currently open SQLite rows. The export schema is an explicit allowlist:
+
+- LinkedIn job ID;
+- company, title, and location;
+- canonical public listing URL;
+- technology category and industries;
+- employment type and start date.
+
+The exports deliberately omit status, posting and observation timestamps, provenance, search runs, closure evidence, diagnostics, and every other lifecycle or operational field. CSV text that could be interpreted as a spreadsheet formula is neutralized. The website serves the generated files as attachments through fixed read-only routes; it does not generate or mutate export data.
+
+Exports are disposable projections, not canonical state. They can be regenerated from SQLite and must never be used to restore lifecycle history.
+
 ## Dependency direction
 
 ```text
@@ -221,11 +236,12 @@ CLI
  │    ├── transport + LinkedIn adapter
  │    ├── normalization + classification
  │    └── repository
- └── README renderer
+ ├── README renderer
+ └── public export renderer
 
 repository → ORM → database session
 migrations → ORM metadata
-website → read-only SQLite
+website → read-only SQLite + generated public exports
 ```
 
 Dependency boundaries are intentional:
@@ -234,7 +250,8 @@ Dependency boundaries are intentional:
 - the repository does not parse HTML;
 - classification does not render documentation;
 - the website does not classify or mutate lifecycle state;
-- the README renderer does not discover jobs;
+- the README and public export renderers do not discover jobs;
+- public exports contain only explicitly approved fields;
 - migrations describe schema evolution rather than application orchestration.
 
 Business rules should remain independent from CLI presentation, network transport, and public projections.
@@ -252,7 +269,7 @@ The supported architecture requires:
 - one canonical SQLite writer;
 - read-only website database access;
 - versioned, checksum-verified SQLite snapshots with automated restore tests;
-- atomic README replacement;
+- atomic README and public-export replacement;
 - offline deterministic tests by default.
 
 An upstream block or challenge is a stop condition, not a problem to bypass.

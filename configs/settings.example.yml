@@ -1,6 +1,7 @@
 # Optional YAML alternative to .env. Process environment values take precedence.
 database_url: sqlite:///data/opportunities.db
 readme_path: README.md
+public_export_dir: data/exports
 search_config_dir: configs/searches
 category_config_path: configs/categories.yml
 target_cycle: 2027

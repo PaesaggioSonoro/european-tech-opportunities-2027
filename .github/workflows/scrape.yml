@@ -151,7 +151,11 @@ jobs:
             echo "Partial success: successful searches were persisted; failed searches changed nothing."
           fi
 
-      - name: Validate database and README
+      - name: Generate public exports for deployment
+        if: inputs.deploy_to_vps == true
+        run: uv run opportunities export-public
+
+      - name: Validate database and generated projections
         run: uv run opportunities validate
       - name: Checkpoint SQLite
         run: uv run python -c "import sqlite3; db=sqlite3.connect('data/opportunities.db'); db.execute('PRAGMA wal_checkpoint(TRUNCATE)'); db.close()"
@@ -184,6 +188,8 @@ jobs:
           path: |
             ${{ steps.canonical-snapshot.outputs.snapshot_database }}
             ${{ steps.canonical-snapshot.outputs.snapshot_manifest }}
+            data/exports/open-opportunities.csv
+            data/exports/open-opportunities.json
             README.md
 
       - name: Open or update scrape-only pull request
@@ -229,7 +235,7 @@ jobs:
           printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
 
-      - name: Deploy validated database to VPS
+      - name: Deploy validated database and public exports to VPS
         if: inputs.deploy_to_vps && github.ref == 'refs/heads/main'
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -255,46 +261,68 @@ jobs:
           remote_dir="/srv/european-tech-opportunities-2027/data"
           remote_database="$remote_dir/opportunities.db"
           remote_previous="$remote_dir/opportunities.db.previous"
-          remote_upload="$remote_dir/.opportunities-${GITHUB_RUN_ID}.db.upload"
+          remote_export_dir="$remote_dir/exports"
+          remote_csv="$remote_export_dir/open-opportunities.csv"
+          remote_json="$remote_export_dir/open-opportunities.json"
+          remote_database_upload="$remote_dir/.opportunities-${GITHUB_RUN_ID}.db.upload"
+          remote_csv_upload="$remote_dir/.open-opportunities-${GITHUB_RUN_ID}.csv.upload"
+          remote_json_upload="$remote_dir/.open-opportunities-${GITHUB_RUN_ID}.json.upload"
           remote_lock="/srv/european-tech-opportunities-2027/.database-deploy.lock"
 
           database_sha=$(sha256sum data/opportunities.db | cut -d ' ' -f 1)
+          csv_sha=$(sha256sum data/exports/open-opportunities.csv | cut -d ' ' -f 1)
+          json_sha=$(sha256sum data/exports/open-opportunities.json | cut -d ' ' -f 1)
           ssh_target="${VPS_USER}@${VPS_HOST}"
           ssh_options=(-i "$HOME/.ssh/id_ed25519" -p "$VPS_PORT" -o BatchMode=yes)
 
           scp -i "$HOME/.ssh/id_ed25519" -P "$VPS_PORT" -o BatchMode=yes \
-            data/opportunities.db "${ssh_target}:${remote_upload}"
+            data/opportunities.db "${ssh_target}:${remote_database_upload}"
+          scp -i "$HOME/.ssh/id_ed25519" -P "$VPS_PORT" -o BatchMode=yes \
+            data/exports/open-opportunities.csv "${ssh_target}:${remote_csv_upload}"
+          scp -i "$HOME/.ssh/id_ed25519" -P "$VPS_PORT" -o BatchMode=yes \
+            data/exports/open-opportunities.json "${ssh_target}:${remote_json_upload}"
 
           # Validated remote paths are intentionally expanded before invoking SSH.
           # shellcheck disable=SC2029
-          remote_sha=$(ssh "${ssh_options[@]}" "$ssh_target" \
-            "sha256sum '$remote_upload' | cut -d ' ' -f 1")
-          if [ "$database_sha" != "$remote_sha" ]; then
+          remote_hashes=$(ssh "${ssh_options[@]}" "$ssh_target" \
+            "sha256sum '$remote_database_upload' '$remote_csv_upload' '$remote_json_upload' | cut -d ' ' -f 1")
+          expected_hashes=$(printf '%s\n%s\n%s\n' "$database_sha" "$csv_sha" "$json_sha")
+          if [ "$expected_hashes" != "$remote_hashes" ]; then
             # shellcheck disable=SC2029
-            ssh "${ssh_options[@]}" "$ssh_target" "rm -f '$remote_upload'"
-            echo "Uploaded database checksum does not match."
+            ssh "${ssh_options[@]}" "$ssh_target" \
+              "rm -f '$remote_database_upload' '$remote_csv_upload' '$remote_json_upload'"
+            echo "One or more uploaded checksums do not match."
             exit 1
           fi
 
           # shellcheck disable=SC2029
           ssh "${ssh_options[@]}" "$ssh_target" \
-            "IMPORT_FILE='$remote_upload' DATABASE_FILE='$remote_database' PREVIOUS_FILE='$remote_previous' LOCK_FILE='$remote_lock' EXPECTED_SHA='$database_sha' bash -s" <<'REMOTE'
+            "DATABASE_IMPORT='$remote_database_upload' CSV_IMPORT='$remote_csv_upload' JSON_IMPORT='$remote_json_upload' DATABASE_FILE='$remote_database' PREVIOUS_FILE='$remote_previous' EXPORT_DIR='$remote_export_dir' CSV_FILE='$remote_csv' JSON_FILE='$remote_json' LOCK_FILE='$remote_lock' DATABASE_SHA='$database_sha' CSV_SHA='$csv_sha' JSON_SHA='$json_sha' bash -s" <<'REMOTE'
           set -euo pipefail
-          trap 'rm -f "$IMPORT_FILE"' EXIT
+          trap 'rm -f "$DATABASE_IMPORT" "$CSV_IMPORT" "$JSON_IMPORT"' EXIT
 
           exec 9>"$LOCK_FILE"
           flock -n 9
 
-          test "$(sha256sum "$IMPORT_FILE" | cut -d " " -f 1)" = "$EXPECTED_SHA"
+          test "$(sha256sum "$DATABASE_IMPORT" | cut -d " " -f 1)" = "$DATABASE_SHA"
+          test "$(sha256sum "$CSV_IMPORT" | cut -d " " -f 1)" = "$CSV_SHA"
+          test "$(sha256sum "$JSON_IMPORT" | cut -d " " -f 1)" = "$JSON_SHA"
 
           if [ -f "$DATABASE_FILE" ]; then
             cp -p "$DATABASE_FILE" "$PREVIOUS_FILE"
           fi
 
-          chgrp opportunities-site "$IMPORT_FILE"
-          chmod 660 "$IMPORT_FILE"
+          mkdir -p "$EXPORT_DIR"
+          chgrp opportunities-site "$EXPORT_DIR" "$DATABASE_IMPORT" "$CSV_IMPORT" "$JSON_IMPORT"
+          chmod 750 "$EXPORT_DIR"
+          chmod 660 "$DATABASE_IMPORT"
+          chmod 640 "$CSV_IMPORT" "$JSON_IMPORT"
           rm -f "${DATABASE_FILE}-wal" "${DATABASE_FILE}-shm" "${DATABASE_FILE}-journal"
-          mv "$IMPORT_FILE" "$DATABASE_FILE"
+          mv "$DATABASE_IMPORT" "$DATABASE_FILE"
+          mv "$CSV_IMPORT" "$CSV_FILE"
+          mv "$JSON_IMPORT" "$JSON_FILE"
 
-          test "$(sha256sum "$DATABASE_FILE" | cut -d " " -f 1)" = "$EXPECTED_SHA"
+          test "$(sha256sum "$DATABASE_FILE" | cut -d " " -f 1)" = "$DATABASE_SHA"
+          test "$(sha256sum "$CSV_FILE" | cut -d " " -f 1)" = "$CSV_SHA"
+          test "$(sha256sum "$JSON_FILE" | cut -d " " -f 1)" = "$JSON_SHA"
           REMOTE

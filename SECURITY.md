@@ -47,6 +47,7 @@ Security fixes target `main` and, when practical, the latest published release. 
 | Persistence | Canonical SQLite writes through repository transactions and Alembic migrations |
 | Website | Read-only SQLite, validated links, no mutation API, and defensive production headers |
 | README | Bounded generated projection with atomic replacement |
+| Public exports | Fixed field allowlist, spreadsheet-safe CSV text, atomic replacement, and read-only delivery |
 | Automation | Offline validation separated from authorized collection, with verified durable snapshots and atomic deployment |
 | Containers | Unprivileged processes, explicit mounts, pinned images, and reduced runtime tooling |
 
@@ -73,13 +74,16 @@ Never weaken or default-enable an authorization gate. An upstream block or chall
 
 `data/opportunities.db` contains public listing metadata and sensitive operational history. It must never contain credentials, sessions, or authenticated HTML.
 
+Public CSV and JSON exports may contain only LinkedIn job ID, company, title, location, canonical listing URL, category, industries, employment type, and start date. They must exclude status, timestamps, provenance, run history, closure evidence, diagnostics, database paths, and environment values.
+
 The website must not:
 
-- run collection, migrations, or lifecycle writes;
+- run collection, migrations, lifecycle writes, or export generation;
 - expose mutation endpoints;
 - expose database paths, environment values, stack traces, or server configuration;
 - render database values as untrusted raw HTML;
-- emit external links outside validated public HTTPS listing URLs.
+- emit external links outside validated public HTTPS listing URLs;
+- serve arbitrary filesystem paths or export filenames.
 
 Authentication, forms, user content, saved applications, write APIs, or administration interfaces require explicit architecture and security review.
 

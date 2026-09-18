@@ -2,7 +2,7 @@
 
 [← Documentation hub](../../README.md) · [Architecture](../development/architecture.md) · [Automation](automation.md) · [Troubleshooting](troubleshooting.md) · [Security policy](../../../SECURITY.md)
 
-This is the canonical database and lifecycle guide for the project. SQLite is the source of truth for operational lifecycle state. Search YAML defines discovery configuration, while the website and README remain read-only projections.
+This is the canonical database and lifecycle guide for the project. SQLite is the source of truth for operational lifecycle state. Search YAML defines discovery configuration, while the website, README, and public downloads remain read-only projections.
 
 ## Contents
 
@@ -327,7 +327,7 @@ For symptom-based diagnosis before destructive recovery, use [Troubleshooting](t
 
 ## Projection consistency
 
-SQLite remains canonical even though the project exposes two read-only public projections.
+SQLite remains canonical even though the project exposes three read-only public projections.
 
 ### Website
 
@@ -365,6 +365,12 @@ Never reconstruct canonical state from the README. It omits:
 - operational diagnostics.
 
 Manual edits inside the generated regions are overwritten.
+
+### Public exports
+
+The pipeline generates `open-opportunities.csv` and `open-opportunities.json` from the same currently open rows. Only the approved public export fields are serialized: LinkedIn job ID, company, title, location, listing URL, category, industries, employment type, and start date.
+
+The files exclude job status, all timestamps, provenance, search runs, closure confirmations, diagnostics, and other lifecycle or operational state. They are validated against SQLite, atomically replaced, and deployed beside the database for read-only website delivery. They are disposable projections and cannot restore canonical state.
 
 ## Data handling
 

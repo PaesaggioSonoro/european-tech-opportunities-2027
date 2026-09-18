@@ -80,7 +80,8 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     PORT=3000 \
     SITE_URL=https://opportunities2027.simonesiega.com \
-    OPPORTUNITIES_DATABASE_PATH=/app/data/opportunities.db
+    OPPORTUNITIES_DATABASE_PATH=/app/data/opportunities.db \
+    OPPORTUNITIES_PUBLIC_EXPORT_DIR=/app/data/exports
 
 # Install exact security revisions until they are incorporated into the pinned
 # base image, then omit npm because the standalone server does not use it.

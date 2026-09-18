@@ -96,24 +96,27 @@ The pipeline service uses:
 | Repository root | `/workspace` | Read/write | Atomic README and search-registry documentation replacement |
 | `/srv/european-tech-opportunities-2027/data` | `/app/data` | Read/write | Canonical SQLite state |
 
-The website service mounts only the same host state directory, in read-only mode, and opens SQLite read-only.
+The website service mounts only the same host state directory, in read-only mode, opens SQLite read-only, and serves the pipeline-generated files under `/app/data/exports`.
 
 The Compose startup path applies the idempotent database upgrade before the website is started.
 
 Expected container database URLs:
 
 ```text
-pipeline: sqlite:////app/data/opportunities.db
-website:  /app/data/opportunities.db
+pipeline database: sqlite:////app/data/opportunities.db
+website database:  /app/data/opportunities.db
+public exports:    /app/data/exports
 ```
 
-Only the controlled pipeline service may mutate canonical state. The `site` service has both a read-only bind mount and a read-only SQLite connection, providing defense in depth.
+Only the controlled pipeline service may mutate canonical state or replace generated exports. The `site` service has a read-only bind mount and a read-only SQLite connection, providing defense in depth.
 
 ## Start the website locally
 
-Build and start the website service:
+Initialize local state and the downloadable projections, then build and start the website service:
 
 ```bash
+docker compose run --rm opportunities db-upgrade
+docker compose run --rm opportunities export-public
 docker compose up --detach --build site
 ```
 
@@ -220,11 +223,12 @@ Required website environment:
 ```dotenv
 SITE_URL=https://opportunities2027.simonesiega.com
 OPPORTUNITIES_DATABASE_PATH=/app/data/opportunities.db
+OPPORTUNITIES_PUBLIC_EXPORT_DIR=/app/data/exports
 ```
 
 The site service must receive the host state directory as a read-only bind mount.
 
-The manual deployment mode in `scrape.yml` replaces the SQLite file in that host directory through verified SSH, checksum comparison, locking, restricted permissions, and atomic rename.
+The manual deployment mode in `scrape.yml` replaces the SQLite file and sanitized CSV/JSON exports in that host directory through verified SSH, checksum comparison, locking, restricted permissions, and atomic rename.
 
 The website opens a new short-lived read-only connection for each server request, so deployed state becomes visible without:
 
@@ -244,7 +248,7 @@ UID 10001
 GID 10001
 ```
 
-The website requires read access to the SQLite database and its parent directory.
+The website requires read access to the SQLite database, the generated exports, and their parent directories.
 
 Generated-document rendering additionally requires write and execute access to the relevant parent directories. The CLI atomically replaces both the owned README regions and the generated registry-layout block in `docs/guides/user-guide/search-registry.md`.
 
@@ -321,7 +325,7 @@ checkpoint + publish verified durable snapshot
 ↓
 review and merge the README projection
 ↓
-deploy the reviewed state atomically
+deploy the reviewed state and public exports
 </pre>
 </div>
 
@@ -342,7 +346,7 @@ docker compose run --rm opportunities --help
 docker compose config
 ```
 
-Docker CI additionally runs Actionlint, Hadolint, and digest-pinned Trivy image scans. It rejects fixable high or critical image vulnerabilities and smoke-tests the migrated website plus its production Content Security Policy and HTTP Strict Transport Security headers.
+Docker CI additionally runs Actionlint, Hadolint, and digest-pinned Trivy image scans. It rejects fixable high or critical image vulnerabilities and smoke-tests the migrated website, sanitized CSV/JSON downloads, production Content Security Policy, and HTTP Strict Transport Security headers.
 
 Preserve:
 

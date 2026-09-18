@@ -2,7 +2,7 @@
 
 [← Documentation hub](../../README.md) · [Installation](../getting-started/installation.md) · [Configuration](../getting-started/configuration.md) · [Troubleshooting](../operations/troubleshooting.md) · [Security policy](../../../SECURITY.md)
 
-This is the canonical CLI reference for the project. The `opportunities` CLI manages database migrations, search inspection, authorized collection, canonical SQLite state, validation, and generated documentation projections.
+This is the canonical CLI reference for the project. The `opportunities` CLI manages database migrations, search inspection, authorized collection, canonical SQLite state, validation, generated documentation, and sanitized public data projections.
 
 Show the command overview:
 
@@ -33,6 +33,7 @@ The global `--settings` option must appear before the command name.
 - [`scrape`](#scrape)
 - [`check-availability`](#check-availability)
 - [`render`](#render)
+- [`export-public`](#export-public)
 - [`stats`](#stats)
 - [`validate`](#validate)
 - [Exit codes](#exit-codes)
@@ -48,7 +49,8 @@ The global `--settings` option must appear before the command name.
 | `search-test` | Run one authorized search without persistence |
 | `scrape` | Run authorized collection and persist independent search outcomes |
 | `check-availability` | Audit every stored LinkedIn listing and delete explicitly unavailable rows |
-| `render` | Regenerate owned README and search-registry documentation projections |
+| `render` | Regenerate owned README, search-registry documentation, and public data projections |
+| `export-public` | Regenerate only the sanitized public CSV and JSON projections |
 | `stats` | Display aggregate canonical state |
 | `validate` | Check schema, lifecycle invariants, and generated projections |
 
@@ -144,7 +146,7 @@ The command:
 4. fetches, parses, normalizes, and classifies candidates;
 5. commits each search outcome independently;
 6. updates provenance and explicit lifecycle evidence;
-7. renders the owned README and search-registry documentation projections unless `--no-render` is set.
+7. renders the owned README, search-registry documentation, and public CSV/JSON projections unless `--no-render` is set.
 
 A partial run preserves successful search transactions.
 
@@ -178,7 +180,7 @@ The command requires the LinkedIn authorization interlock and checks every job r
 - a scoped public-page “No longer accepting applications” alert also permanently deletes the job;
 - authentication failures, rate limits, server errors, malformed responses, and transport failures preserve the row as inconclusive.
 
-The command exits with code `2` when one or more checks are inconclusive. Confirmed results remain committed, and the default path refreshes the owned generated documentation projections. The nightly workflow runs this full audit once per day before scraping and opens or updates a tightly scoped README pull request that auto-merges only through configured required checks. The availability-only workflow can run the same command manually and opens its own manual-review pull request.
+The command exits with code `2` when one or more checks are inconclusive. Confirmed results remain committed, and the default path refreshes the owned README, registry documentation, and public CSV/JSON projections. The nightly workflow runs this full audit once per day before scraping and opens or updates a tightly scoped README pull request that auto-merges only through configured required checks. The availability-only workflow can run the same command manually and opens its own manual-review pull request.
 
 ## `render`
 
@@ -186,7 +188,7 @@ The command exits with code `2` when one or more checks are inconclusive. Confir
 uv run opportunities render
 ```
 
-Regenerates owned generated documentation from canonical SQLite state and the configured search registry.
+Regenerates every owned projection from canonical SQLite state and the configured search registry.
 
 The README projection includes:
 
@@ -195,19 +197,30 @@ The README projection includes:
 - the public website link;
 - at most five recently discovered internships and five recently discovered New Grad opportunities.
 
-The generated registry-layout counts in [`search-registry.md`](search-registry.md) are refreshed from `configs/searches/` at the same time.
+The generated registry-layout counts in [`search-registry.md`](search-registry.md) are refreshed from `configs/searches/` at the same time. Sanitized `open-opportunities.csv` and `open-opportunities.json` files are generated from all open rows using the fixed public-field allowlist.
 
 The command:
 
 - performs no network access;
 - does not modify SQLite;
 - writes the owned README regions through atomic replacement;
-- refreshes the owned generated registry-layout block in `search-registry.md`.
+- refreshes the owned generated registry-layout block in `search-registry.md`;
+- atomically replaces both public exports.
 
 > [!IMPORTANT]
 > A fresh local database contains no listings. Do not render and commit the preview from empty development state.
 
-Do not edit generated counts, timestamps, opportunity rows, or registry-layout counts manually.
+Do not edit generated counts, timestamps, opportunity rows, registry-layout counts, or public exports manually.
+
+## `export-public`
+
+```bash
+uv run opportunities export-public
+```
+
+Generates only `open-opportunities.csv` and `open-opportunities.json` in the configured public-export directory. It reads currently open SQLite rows, serializes only the approved public opportunity fields, neutralizes spreadsheet formulas in CSV text, and atomically replaces both files.
+
+This command performs no network access, does not modify SQLite or documentation, and is used by deployment-only automation after restoring reviewed canonical state. The exports omit lifecycle timestamps, status, provenance, runs, closure evidence, and diagnostics.
 
 ## `stats`
 
@@ -238,7 +251,8 @@ Checks:
 - the Alembic revision;
 - monotonic lifecycle timestamps;
 - exact README projection equality with canonical state;
-- generated search-registry layout counts against the configured YAML files.
+- generated search-registry layout counts against the configured YAML files;
+- exact public CSV and JSON equality with the approved fields from open SQLite rows.
 
 Validation performs no network access and never repairs state automatically.
 
@@ -266,16 +280,17 @@ GitHub Actions handling of these codes is documented in [Automation](../operatio
 
 ## Command side effects
 
-| Command | LinkedIn network | Writes SQLite | Writes generated docs |
+| Command | LinkedIn network | Writes SQLite | Writes projections |
 |---|---:|---:|---:|
 | `db-upgrade` | No | Schema only | No |
 | `searches` | No | No | No |
 | `search-test` | Yes, after authorization gate | No | No |
-| `scrape` | Yes, after authorization gate | Yes | README + registry docs after at least one successful search |
+| `scrape` | Yes, after authorization gate | Yes | README + registry docs + public exports after at least one successful search |
 | `scrape --no-render` | Yes, after authorization gate | Yes | No |
-| `check-availability` | Yes, after authorization gate | Yes | README + registry docs |
+| `check-availability` | Yes, after authorization gate | Yes | README + registry docs + public exports |
 | `check-availability --no-render` | Yes, after authorization gate | Yes | No |
-| `render` | No | No | README + registry docs |
+| `render` | No | No | README + registry docs + public exports |
+| `export-public` | No | No | Public exports only |
 | `stats` | No | No | No |
 | `validate` | No | No | No |
 
@@ -320,11 +335,17 @@ uv run opportunities scrape --no-render
 uv run opportunities stats
 ```
 
-### Regenerate documentation from representative state
+### Regenerate every projection from representative state
 
 ```bash
 uv run opportunities render
 uv run opportunities validate
+```
+
+### Regenerate only public downloads
+
+```bash
+uv run opportunities export-public
 ```
 
 ### Verify migrations during development

@@ -15,6 +15,49 @@ async function openDirectory(page: Page, url = "/") {
   );
 }
 
+test("downloads sanitized public CSV and JSON exports", async ({page, request}) => {
+  await openDirectory(page);
+
+  const csvLink = page.getByRole("link", {name: "Download CSV"});
+  const jsonLink = page.getByRole("link", {name: "Download JSON"});
+  await expect(csvLink).toHaveAttribute("href", "/open-opportunities.csv");
+  await expect(jsonLink).toHaveAttribute("href", "/open-opportunities.json");
+
+  const csvBox = await csvLink.boundingBox();
+  const countBox = await page.locator(".directory-count").boundingBox();
+  expect(csvBox).not.toBeNull();
+  expect(countBox).not.toBeNull();
+  expect(csvBox!.x).toBeLessThan(countBox!.x);
+
+  const csvResponse = await request.get("/open-opportunities.csv");
+  expect(csvResponse.ok()).toBeTruthy();
+  expect(csvResponse.headers()["content-type"]).toContain("text/csv");
+  expect(csvResponse.headers()["content-disposition"]).toContain("open-opportunities.csv");
+  expect(await csvResponse.text()).toContain(
+    "linkedin_job_id,company,title,location,link,category,industries,employment_type,start_date"
+  );
+
+  const jsonResponse = await request.get("/open-opportunities.json");
+  expect(jsonResponse.ok()).toBeTruthy();
+  expect(jsonResponse.headers()["content-type"]).toContain("application/json");
+  expect(jsonResponse.headers()["content-disposition"]).toContain("open-opportunities.json");
+  const rows = (await jsonResponse.json()) as Record<string, unknown>[];
+  expect(rows).toHaveLength(12);
+  expect(Object.keys(rows[0])).toEqual([
+    "linkedin_job_id",
+    "company",
+    "title",
+    "location",
+    "link",
+    "category",
+    "industries",
+    "employment_type",
+    "start_date",
+  ]);
+  expect(rows[0]).not.toHaveProperty("status");
+  expect(rows[0]).not.toHaveProperty("first_seen_at");
+});
+
 test("filters opportunities and writes shareable URL parameters", async ({page}) => {
   await openDirectory(page);
 

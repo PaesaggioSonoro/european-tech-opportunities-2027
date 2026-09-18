@@ -52,7 +52,8 @@ def test_dotenv_loads_automatically_and_process_environment_wins(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     (tmp_path / ".env").write_text(
-        "OPPORTUNITIES_RATE_LIMIT_SECONDS=4\nOPPORTUNITIES_SEARCH_MAX_PAGES=2\n",
+        "OPPORTUNITIES_RATE_LIMIT_SECONDS=4\nOPPORTUNITIES_SEARCH_MAX_PAGES=2\n"
+        "OPPORTUNITIES_PUBLIC_EXPORT_DIR=generated/public\n",
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
@@ -60,6 +61,7 @@ def test_dotenv_loads_automatically_and_process_environment_wins(
     settings = load_settings()
     assert settings.rate_limit_seconds == 1
     assert settings.search_max_pages == 2
+    assert settings.public_export_dir == Path("generated/public")
 
 
 def test_trailing_environment_whitespace_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:

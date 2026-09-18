@@ -9,6 +9,7 @@ This is the canonical website guide for the project. The [live website](https://
 - [Interface](#interface)
 - [Search, filters, and sorting](#search-filters-and-sorting)
 - [Displayed fields](#displayed-fields)
+- [Public data downloads](#public-data-downloads)
 - [Data interpretation](#data-interpretation)
 - [Accessibility and responsive behavior](#accessibility-and-responsive-behavior)
 - [Shareable filter URLs](#shareable-filter-urls)
@@ -42,6 +43,7 @@ The directory provides:
 - pagination with selectable page size;
 - light and dark themes stored as browser preferences;
 - direct links to public source listings;
+- downloadable sanitized CSV and JSON datasets;
 - shareable filter URLs;
 - a live result count, equal to the total open-opportunity count when no filters are active;
 - the latest successful collection time.
@@ -95,6 +97,19 @@ A browser interaction or URL state is not lifecycle evidence, collection input, 
 The website renders normalized publication fields rather than raw source HTML.
 
 External application links are validated canonical LinkedIn HTTPS URLs whose numeric path matches the stored job identity.
+
+## Public data downloads
+
+Two download controls appear immediately to the left of the open-role count:
+
+- **Download CSV** → `/open-opportunities.csv`;
+- **Download JSON** → `/open-opportunities.json`.
+
+Both files contain every currently open opportunity at generation time. Their fixed schema includes only LinkedIn job ID, company, title, location, canonical listing URL, category, industries, employment type, and start date. They exclude status, first/last-seen and update timestamps, provenance, search runs, closure evidence, diagnostics, and all other lifecycle or operational state.
+
+The Python pipeline generates and validates both files from canonical SQLite. CSV output neutralizes cells that spreadsheet applications could interpret as formulas. The website serves the generated files as read-only attachments and returns a generic unavailable response when a file is absent; it never creates exports from browser input.
+
+Downloads represent the latest deployed projection and are not a canonical backup or complete historical dataset.
 
 ## Data interpretation
 
@@ -188,7 +203,8 @@ The website:
 - never performs LinkedIn requests;
 - never treats browser activity as canonical state;
 - never exposes a mutation API;
-- observes a newly deployed database on the next request.
+- serves only the two fixed generated public-export filenames;
+- observes a newly deployed database and exports on subsequent requests.
 
 The Python pipeline is the sole application writer.
 
@@ -233,6 +249,7 @@ Production variables:
 ```dotenv
 SITE_URL=https://opportunities2027.simonesiega.com
 OPPORTUNITIES_DATABASE_PATH=/app/data/opportunities.db
+OPPORTUNITIES_PUBLIC_EXPORT_DIR=/app/data/exports
 ```
 
 `SITE_URL` defines the canonical public origin used by website metadata.
@@ -248,10 +265,10 @@ The website never collects, migrates, or synchronizes data itself.
 Normal automation keeps collection/review and production deployment separate:
 
 1. the controlled pipeline writer performs availability auditing and/or collection;
-2. the resulting canonical state is validated, checkpointed, and published as a verified durable snapshot;
+2. the resulting canonical state and public exports are validated, then SQLite is checkpointed and published as a verified durable snapshot;
 3. the owned README projection is proposed through the scoped automation pull request;
-4. after review and merge, deployment-only automation restores and validates the reviewed durable state against `main`;
-5. the production SQLite file is replaced atomically in the shared host state directory.
+4. after review and merge, deployment-only automation restores the reviewed durable state, regenerates the public exports, and validates every projection against `main`;
+5. the production SQLite file and generated downloads are checksum-verified and replaced in the shared host state directory.
 
 The website opens a new read-only connection on the next request, so reviewed deployed state becomes visible without an application rebuild, write endpoint, or in-process migration.
 

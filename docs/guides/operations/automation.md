@@ -43,7 +43,7 @@ The three validation workflows require no LinkedIn access:
 
 - **Python CI** validates the pipeline, CLI, migrations, lifecycle behavior, README projection, and documentation contracts; it publishes critical-path coverage and benchmark reports for 30 days. Current measured values are summarized in the root [Python quality baseline](../../../README.md#python-quality-baseline).
 - **Site CI** validates formatting, linting, strict TypeScript, the production Next.js build, unit tests, and Playwright behavior against synthetic SQLite state.
-- **Docker CI** runs `actionlint` and Hadolint, builds both production targets, uses Trivy to reject high or critical vulnerabilities for which a fix is available, and verifies migration, read-only website access, Content Security Policy, and HTTP Strict Transport Security. Unfixed findings are excluded from this actionable-finding gate.
+- **Docker CI** runs `actionlint` and Hadolint, builds both production targets, uses Trivy to reject high or critical vulnerabilities for which a fix is available, and verifies migration, read-only website access, public-export delivery, Content Security Policy, and HTTP Strict Transport Security. Unfixed findings are excluded from this actionable-finding gate.
 
 Validation jobs have explicit timeouts and checkout without persisted Git credentials. Third-party actions and CI tool images are pinned to immutable revisions where practical and should remain pinned. Runtime and package-manager versions should stay explicit rather than being resolved through latest-release APIs.
 
@@ -123,7 +123,7 @@ bounded collection + classification, when selected
 ↓
 isolated transactional persistence
 ↓
-README projection + validation
+README + sanitized CSV/JSON projection validation
 ↓
 SQLite WAL checkpoint
 ↓
@@ -147,7 +147,9 @@ A manual `scrape.yml` run from `main` with `deploy_to_vps=true` does not collect
 <pre>
 restore reviewed durable SQLite state
 ↓
-migrate + validate against README on main
+migrate + generate sanitized CSV/JSON exports
+↓
+validate README and exports against canonical state
 ↓
 SQLite WAL checkpoint
 ↓
@@ -157,7 +159,7 @@ checksum-verified VPS upload
 ↓
 acquire deployment lock + preserve previous database
 ↓
-atomic canonical database replacement
+replace canonical database + public exports
 </pre>
 </div>
 
@@ -197,7 +199,7 @@ Every strict JSON manifest records the database path, byte size, SHA-256, Alembi
 
 Publication uploads new paths, downloads both files into a clean directory, verifies SQLite and application readability, and only then atomically renames a temporary `latest.json`. Cache, artifact, and deployment copies are byte-identical to the verified download. A failed transfer or verification leaves the prior pointer in place. The restricted account has no shell, sudo, forwarding, application-database access, or membership in `opportunities-site`.
 
-GitHub artifacts remain a 30-day secondary recovery path and contain the exact database snapshot, manifest, and `README.md`. By default, VPS manifests declare a 365-day retention window; automation does not delete older snapshots. Capacity must be monitored and expiry reviewed manually after `retain_until`. Because this storage is on the same VPS as production, it protects against cache expiry and accidental database replacement but not complete VPS, disk, or provider loss. Replication to an independent host remains the recommended next durability layer.
+GitHub artifacts remain a 30-day secondary recovery path and contain the exact database snapshot, manifest, `README.md`, and sanitized CSV/JSON exports. By default, VPS manifests declare a 365-day retention window; automation does not delete older snapshots. Capacity must be monitored and expiry reviewed manually after `retain_until`. Because this storage is on the same VPS as production, it protects against cache expiry and accidental database replacement but not complete VPS, disk, or provider loss. Replication to an independent host remains the recommended next durability layer.
 
 Canonical backup, sidecar, migration, and restoration rules belong to the [database lifecycle guide](database.md).
 
@@ -259,19 +261,19 @@ Scheduled runs do not deploy to the VPS. After the nightly pull request merges�
 
 ### Deployment sequence
 
-After a review pull request is merged, a deployment-mode run restores the verified durable database state, skips all new collection and availability requests, and validates it against `main`. It then:
+After a review pull request is merged, a deployment-mode run restores the verified durable database state, skips all new collection and availability requests, regenerates the sanitized public exports, and validates every projection against `main`. It then:
 
-1. uploads the validated database to a run-specific temporary path in the host state directory;
-2. compares local and remote SHA-256 checksums and removes the upload if they differ;
+1. uploads the validated database, CSV, and JSON to run-specific temporary paths in the host state directory;
+2. compares every local and remote SHA-256 checksum and removes the uploads if any differ;
 3. acquires a VPS `flock`;
 4. preserves the current canonical file as `opportunities.db.previous`;
-5. assigns the restricted `opportunities-site` group and mode `0660` to the upload;
+5. assigns restricted `opportunities-site` ownership and read permissions to the database and exports;
 6. removes stale SQLite sidecars while no database connection is writing;
-7. atomically renames the temporary database into place;
-8. verifies the final checksum;
+7. renames the temporary database and export files into their fixed paths;
+8. verifies every final checksum;
 9. cleans up any upload remaining when the remote replacement step exits.
 
-The website opens a new read-only SQLite connection on the next request and observes the deployed database without an application restart or mutation endpoint.
+The website opens a new read-only SQLite connection or export file on each request and observes the deployed projections without an application restart or mutation endpoint.
 
 Compose topology, volume permissions, Dokploy routing, and container diagnostics belong to the [Docker and deployment guide](docker.md).
 

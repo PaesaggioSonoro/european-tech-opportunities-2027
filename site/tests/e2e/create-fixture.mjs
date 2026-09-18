@@ -1,4 +1,4 @@
-import {mkdirSync, rmSync} from "node:fs";
+import {mkdirSync, rmSync, writeFileSync} from "node:fs";
 import path from "node:path";
 import {Database} from "bun:sqlite";
 
@@ -106,3 +106,35 @@ const transaction = database.transaction((rows) => {
 });
 transaction(jobs);
 database.close();
+
+const publicFields = [
+  "linkedin_job_id",
+  "company",
+  "title",
+  "location",
+  "link",
+  "category",
+  "industries",
+  "employment_type",
+  "start_date",
+];
+const publicRows = jobs
+  .toReversed()
+  .map((job) => Object.fromEntries(publicFields.map((field, index) => [field, job[index]])));
+const csvCell = (value) => {
+  if (value === null) return "";
+  const text = String(value);
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return /[",\n\r]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
+};
+const csv = [
+  publicFields.join(","),
+  ...publicRows.map((row) => publicFields.map((field) => csvCell(row[field])).join(",")),
+].join("\n");
+
+writeFileSync(path.join(fixtureDirectory, "open-opportunities.csv"), `${csv}\n`, "utf8");
+writeFileSync(
+  path.join(fixtureDirectory, "open-opportunities.json"),
+  `${JSON.stringify(publicRows, null, 2)}\n`,
+  "utf8"
+);

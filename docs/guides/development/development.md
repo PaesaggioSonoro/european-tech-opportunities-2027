@@ -93,8 +93,8 @@ GNU Make provides the shortcuts below. On Windows or another environment without
 | `make install` | Install Python development dependencies |
 | `make lock` | Verify that `uv.lock` matches project metadata |
 | `make migrate` | Upgrade the configured local database |
-| `make render` | Regenerate the README preview from representative state |
-| `make validate` | Validate SQLite state and generated projections |
+| `make render` | Regenerate the README, registry documentation, and public CSV/JSON projections from representative state |
+| `make validate` | Validate SQLite state and every generated projection |
 | `make searches` | Inspect the effective search registry |
 | `make stats` | Inspect aggregate database state |
 | `make format` | Apply Ruff formatting and safe fixes |
@@ -169,7 +169,7 @@ uv run python scripts/check_migrations.py
 
 Test a fresh database and, when existing state changes, a representative backup. Migration design and recovery belong to [Database lifecycle](../operations/database.md#migrations).
 
-### README preview and generated documentation
+### README, public exports, and generated documentation
 
 Do not render from an empty database and commit the result.
 
@@ -181,7 +181,7 @@ uv run opportunities validate
 uv run pytest tests/integration/test_readme.py -q
 ```
 
-Generated files must be updated through their owning commands rather than edited manually.
+Generated files must be updated through their owning commands rather than edited manually. Public exports are written under the configured export directory and must contain only the approved field allowlist.
 
 ### Containers
 
@@ -257,7 +257,7 @@ Integration coverage includes:
 - persistence and failure isolation;
 - provenance and monotonic timestamps;
 - closure confirmation and rediscovery;
-- README rendering and validation;
+- README and public-export rendering and validation;
 - ORM and Alembic agreement.
 
 `make coverage` measures branch coverage for classification, collection orchestration, availability auditing, and repository lifecycle state. The combined threshold is 85%; terminal, XML, JSON, and HTML reports are written under the ignored `quality-reports/` directory.
@@ -305,7 +305,7 @@ These variables do not grant permission. CI does not run live tests, and an acce
 
 ## README and documentation changes
 
-The root README contains one opportunity-count marker pair and one opportunity-preview marker pair. `src/opportunities/readme.py` owns the opportunity metadata, latest successful collection time, website link, and bounded previews of five internships and five New Grad opportunities.
+The root README contains one opportunity-count marker pair and one opportunity-preview marker pair. `src/opportunities/readme.py` owns the opportunity metadata, latest successful collection time, website link, and bounded previews of five internships and five New Grad opportunities. `src/opportunities/public_exports.py` separately owns the sanitized open-opportunity CSV and JSON projections.
 
 Separate coverage markers surround the badge and quality table owned by `scripts/coverage_docs.py`. `make coverage` refreshes them from `quality-reports/coverage.json`, while CI uses `--check` to reject stale committed metrics.
 

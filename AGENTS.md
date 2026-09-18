@@ -13,7 +13,7 @@ The project favors **precision, determinism, lifecycle safety, and responsible s
 1. Preserve canonical data and lifecycle correctness.
 2. Keep source access bounded, permission-gated, and unauthenticated.
 3. Keep classification deterministic and conservative.
-4. Keep the website and README read-only projections of SQLite.
+4. Keep the website, README, and sanitized public exports read-only projections of SQLite.
 5. Prefer focused, testable changes over broad abstractions.
 
 If a tradeoff is required, choose correctness, safety, reproducibility, and explicit evidence over convenience or additional coverage.
@@ -51,6 +51,7 @@ src/opportunities/pipeline/      → Collection, classification, and availabilit
 src/opportunities/database/      → Canonical SQLite models, repository, transactions
 src/opportunities/cli/           → CLI orchestration, output, and exit codes
 src/opportunities/readme.py      → Deterministic bounded README projection
+src/opportunities/public_exports.py → Sanitized public CSV/JSON projections
 migrations/                      → Alembic schema history
 site/                            → Read-only Next.js opportunity directory
 tests/                           → Offline unit, integration, fixture, migration, benchmark coverage
@@ -68,7 +69,7 @@ search YAML + classification rules
 → bounded guest detail HTML
 → normalization + deterministic classification
 → transactional SQLite lifecycle state
-→ website + bounded README preview
+→ website + bounded README preview + sanitized public exports
 ```
 
 - Discovery is not acceptance.
@@ -77,7 +78,7 @@ search YAML + classification rules
 - The repository layer is the sole application writer.
 - Search-page disappearance never closes a listing by itself.
 - Failed searches must not mutate that search's lifecycle state.
-- The website and README never classify jobs or mutate lifecycle state.
+- The website, README, and public exports never classify jobs or mutate lifecycle state.
 
 ## Tech Stack
 
@@ -130,7 +131,7 @@ Keep deep details canonical in those guides. Summarize and link instead of dupli
 6. **One writer:** canonical application state has one controlled repository writer.
 7. **Bounded access:** requests, retries, concurrency, pages, results, and response sizes remain limited.
 8. **Unauthenticated access:** no LinkedIn credentials, sessions, cookies, browser storage, or private endpoints.
-9. **Read-only projections:** the website and README do not mutate canonical state.
+9. **Read-only projections:** the website, README, and public CSV/JSON exports do not mutate canonical state.
 10. **Deterministic behavior:** classification, persistence, rendering, and validation are reproducible.
 
 Do not intentionally alter these contracts without explicit user direction and review of `architecture.md` plus `SECURITY.md`.
@@ -192,12 +193,13 @@ Precision is an intentional product decision.
 
 ## README and Generated Content
 
-The root README contains generated opportunity regions owned by `src/opportunities/readme.py`.
+The root README contains generated opportunity regions owned by `src/opportunities/readme.py`. Sanitized CSV/JSON downloads are owned by `src/opportunities/public_exports.py` and may contain only the approved public field allowlist.
 
 - Do not manually edit generated count or preview regions.
 - Do not reproduce complete generated marker pairs in examples.
 - Do not render and commit the README from an empty local database.
 - Update generated regions only through the owning render command with representative canonical state.
+- Keep runtime CSV/JSON exports ignored by Git; publish them through the controlled artifact and deployment paths.
 - Run validation after rendering.
 
 ## Code Standards

@@ -131,7 +131,7 @@ jobs:
             exit "$code"
           fi
 
-      - name: Validate database and README
+      - name: Validate database and generated projections
         run: uv run opportunities validate
       - name: Checkpoint SQLite
         run: uv run python -c "import sqlite3; db=sqlite3.connect('data/opportunities.db'); db.execute('PRAGMA wal_checkpoint(TRUNCATE)'); db.close()"
@@ -164,6 +164,8 @@ jobs:
           path: |
             ${{ steps.canonical-snapshot.outputs.snapshot_database }}
             ${{ steps.canonical-snapshot.outputs.snapshot_manifest }}
+            data/exports/open-opportunities.csv
+            data/exports/open-opportunities.json
             README.md
 
       - name: Open or update availability pull request

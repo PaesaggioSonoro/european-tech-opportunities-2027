@@ -104,6 +104,7 @@ jobs:
       - name: Migrate and validate recovered state
         run: |
           uv run opportunities db-upgrade
+          uv run opportunities export-public
           uv run opportunities validate
           uv run python -c "import sqlite3; db=sqlite3.connect('data/opportunities.db'); db.execute('PRAGMA wal_checkpoint(TRUNCATE)'); db.close()"
 
@@ -131,6 +132,8 @@ jobs:
           path: |
             ${{ steps.canonical-snapshot.outputs.snapshot_database }}
             ${{ steps.canonical-snapshot.outputs.snapshot_manifest }}
+            data/exports/open-opportunities.csv
+            data/exports/open-opportunities.json
 
       - name: Remove SSH credentials
         if: always()

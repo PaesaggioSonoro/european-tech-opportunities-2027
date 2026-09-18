@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useSyncExternalStore} from "react";
+import {Download} from "lucide-react";
 import {OpportunityFilters} from "@/components/opportunities/opportunity-filters";
 import {OpportunityList} from "@/components/opportunities/opportunity-list";
 import {useOpportunityFilters} from "@/components/opportunities/use-opportunity-filters";
@@ -43,7 +44,7 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
       aria-busy={!isInteractive}
       aria-labelledby="opportunities-title"
     >
-      <div className="flex items-start justify-between gap-6">
+      <div className="flex items-start justify-between gap-6 max-[760px]:flex-col">
         <div>
           <h1
             id="opportunities-title"
@@ -55,18 +56,31 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
             Discover open 2027 technology internships and New Grad roles across Europe.
           </p>
         </div>
-        <Badge
-          className="directory-count min-h-8 gap-1.5 rounded-md px-2.5 py-0"
-          variant="outline"
-          aria-live="polite"
-        >
-          <strong className="text-base font-bold tracking-[-0.03em] text-[var(--text)]">
-            {filteredOpportunities.length}
-          </strong>
-          <span className="text-[11px] text-[var(--text-soft)]">
-            open {filteredOpportunities.length === 1 ? "role" : "roles"}
-          </span>
-        </Badge>
+        <div className="flex items-center gap-2 max-[760px]:w-full max-[480px]:flex-wrap">
+          {(["csv", "json"] as const).map((format) => (
+            <a
+              key={format}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[12px] font-medium whitespace-nowrap text-[var(--text)] shadow-[0_1px_2px_rgb(0_0_0/3%)] transition-colors duration-150 hover:bg-[var(--surface-hover)] [&_svg]:size-3.5"
+              href={`/open-opportunities.${format}`}
+              download
+            >
+              <Download aria-hidden="true" />
+              Download {format.toUpperCase()}
+            </a>
+          ))}
+          <Badge
+            className="directory-count min-h-8 gap-1.5 rounded-md px-2.5 py-0 max-[760px]:ml-auto"
+            variant="outline"
+            aria-live="polite"
+          >
+            <strong className="text-base font-bold tracking-[-0.03em] text-[var(--text)]">
+              {filteredOpportunities.length}
+            </strong>
+            <span className="text-[11px] text-[var(--text-soft)]">
+              open {filteredOpportunities.length === 1 ? "role" : "roles"}
+            </span>
+          </Badge>
+        </div>
       </div>
 
       <OpportunityFilters

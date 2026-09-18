@@ -38,6 +38,7 @@ Also verify:
 - the working directory;
 - whether `.env` or a settings YAML is being loaded;
 - `OPPORTUNITIES_DATABASE_URL`;
+- `OPPORTUNITIES_PUBLIC_EXPORT_DIR` when downloads are affected;
 - process-environment overrides;
 - whether execution is local, Docker, or GitHub Actions;
 - the exact command and exit code.
@@ -198,6 +199,19 @@ When mismatch remains, verify:
 - parent-directory write permission;
 - absence of concurrent renderers or formatters;
 - that the committed projection was not generated from empty state.
+
+### Public export is missing or stale
+
+Regenerate only the sanitized downloads from migrated canonical state:
+
+```bash
+uv run opportunities export-public
+uv run opportunities validate
+```
+
+Verify `OPPORTUNITIES_PUBLIC_EXPORT_DIR`, directory write permission for the pipeline, read permission for the website, and that deployment uploaded both files with matching checksums. Do not generate exports in the website or expose arbitrary filesystem paths as a fallback.
+
+The expected files are `open-opportunities.csv` and `open-opportunities.json`. They contain no lifecycle or operational state and can be safely regenerated from SQLite.
 
 ### README replacement fails
 
@@ -461,7 +475,8 @@ Check:
 - restricted group and file mode;
 - whether atomic rename completed;
 - whether stale sidecars remain;
-- whether the website reads `/app/data/opportunities.db`.
+- whether the website reads `/app/data/opportunities.db`;
+- whether `/app/data/exports/open-opportunities.csv` and `.json` exist with readable permissions.
 
 Deployment sequencing is documented in [Automation](automation.md#vps-deployment).
 
@@ -524,7 +539,7 @@ Check:
 
 - the host state directory is mounted;
 - the website bind mount is read-only;
-- the database exists;
+- the database and both public export files exist;
 - UID/GID `10001:10001` has read access through the configured host ownership or group mapping;
 - the configured path is `/app/data/opportunities.db`;
 - database and sidecars were not copied inconsistently.

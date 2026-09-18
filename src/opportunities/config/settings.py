@@ -34,6 +34,7 @@ class Settings(BaseModel):
     search_config_dir: Path = _DEFAULT_CONFIG_DIR / "searches"
     category_config_path: Path = _DEFAULT_CONFIG_DIR / "categories.yml"
     readme_path: Path = Path("README.md")
+    public_export_dir: Path = Path("data/exports")
     target_cycle: int = Field(default=2027, ge=2020, le=2100)
     search_max_pages: int | None = Field(default=None, ge=1, le=10)
     search_max_results: int | None = Field(default=None, ge=1, le=250)
@@ -67,6 +68,7 @@ class Settings(BaseModel):
         "search_config_dir",
         "category_config_path",
         "readme_path",
+        "public_export_dir",
         mode="before",
     )
     @classmethod
@@ -116,6 +118,7 @@ _ENV_FIELDS = {
     "SEARCH_CONFIG_DIR": "search_config_dir",
     "CATEGORY_CONFIG_PATH": "category_config_path",
     "README_PATH": "readme_path",
+    "PUBLIC_EXPORT_DIR": "public_export_dir",
     "TARGET_CYCLE": "target_cycle",
     "SEARCH_MAX_PAGES": "search_max_pages",
     "SEARCH_MAX_RESULTS": "search_max_results",

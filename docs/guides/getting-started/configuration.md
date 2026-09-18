@@ -68,6 +68,7 @@ A typical local `.env` contains:
 ```dotenv
 OPPORTUNITIES_DATABASE_URL=sqlite:///data/opportunities.db
 OPPORTUNITIES_README_PATH=README.md
+OPPORTUNITIES_PUBLIC_EXPORT_DIR=data/exports
 OPPORTUNITIES_SEARCH_CONFIG_DIR=configs/searches
 OPPORTUNITIES_CATEGORY_CONFIG_PATH=configs/categories.yml
 OPPORTUNITIES_TARGET_CYCLE=2027
@@ -90,6 +91,7 @@ Do not commit, paste, or attach them to public issues.
 | `OPPORTUNITIES_SEARCH_CONFIG_DIR` | `configs/searches` | Recursive YAML search-registry directory |
 | `OPPORTUNITIES_CATEGORY_CONFIG_PATH` | `configs/categories.yml` | Classification-rules file |
 | `OPPORTUNITIES_README_PATH` | `README.md` | Existing UTF-8 file containing exactly one opportunity-count marker pair and one opportunity-preview marker pair |
+| `OPPORTUNITIES_PUBLIC_EXPORT_DIR` | `data/exports` | Directory for atomically generated `open-opportunities.csv` and `open-opportunities.json` projections |
 | `OPPORTUNITIES_TARGET_CYCLE` | `2027` | Integer from 2020 through 2100 |
 | `OPPORTUNITIES_SETTINGS_FILE` | unset | Selects an optional settings YAML file |
 
@@ -131,6 +133,7 @@ Start from `configs/settings.example.yml`. The example below mirrors the support
 ```yaml
 database_url: sqlite:///data/opportunities.db
 readme_path: README.md
+public_export_dir: data/exports
 search_config_dir: configs/searches
 category_config_path: configs/categories.yml
 target_cycle: 2027
@@ -240,11 +243,12 @@ Schema, migrations, backup, restoration, and lifecycle rules belong to the [data
 
 ## Website settings
 
-The Next.js website uses two runtime or build variables:
+The Next.js website uses three runtime or build variables:
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `OPPORTUNITIES_DATABASE_PATH` | `../data/opportunities.db` | Read-only SQLite file used by server requests |
+| `OPPORTUNITIES_PUBLIC_EXPORT_DIR` | `../data/exports` | Read-only directory containing pipeline-generated CSV and JSON downloads |
 | `SITE_URL` | `http://localhost:3000` | Canonical public origin used by metadata |
 
 Create the local website environment file:
@@ -259,9 +263,10 @@ For local development, set the values in `site/.env.local` to the local origin a
 ```dotenv
 SITE_URL=http://localhost:3000
 OPPORTUNITIES_DATABASE_PATH=../data/opportunities.db
+OPPORTUNITIES_PUBLIC_EXPORT_DIR=../data/exports
 ```
 
-`SITE_URL` falls back to `http://localhost:3000` when it is unset, while `OPPORTUNITIES_DATABASE_PATH` falls back to `../data/opportunities.db`.
+`SITE_URL` falls back to `http://localhost:3000` when it is unset, `OPPORTUNITIES_DATABASE_PATH` falls back to `../data/opportunities.db`, and `OPPORTUNITIES_PUBLIC_EXPORT_DIR` falls back to `../data/exports`.
 
 The production container reads:
 
@@ -274,6 +279,7 @@ Production uses:
 ```dotenv
 SITE_URL=https://opportunities2027.simonesiega.com
 OPPORTUNITIES_DATABASE_PATH=/app/data/opportunities.db
+OPPORTUNITIES_PUBLIC_EXPORT_DIR=/app/data/exports
 ```
 
 The website must retain read-only database access.

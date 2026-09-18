@@ -62,7 +62,7 @@ Preserve these invariants:
 5. Failed searches do not mutate that search's lifecycle state.
 6. The repository layer is the sole application writer.
 7. Requests and processing remain authorized, unauthenticated, bounded, and deterministic.
-8. The website and bounded README remain read-only projections.
+8. The website, bounded README, and sanitized public exports remain read-only projections.
 
 Do not add credentials, sessions, browser automation, private APIs, CAPTCHA handling, proxy evasion, concurrent writers, mutation APIs, or user-submitted data without explicit architecture and security review.
 
@@ -187,7 +187,7 @@ Do not claim a check passed unless it ran. Explain omissions in the pull request
 
 Keep task guides under `docs/guides/` and assets under `docs/assets/`. Link to the canonical guide instead of duplicating procedures.
 
-- Preserve README generated markers and never edit generated counts, timestamps, rows, or coverage metrics manually.
+- Preserve README generated markers and never edit generated counts, timestamps, rows, coverage metrics, or public CSV/JSON exports manually.
 - Render opportunity data only from representative canonical state; refresh coverage metrics with `make coverage`.
 - Keep commands executable from their documented directory.
 - Use repository-relative links, stable anchors, descriptive alt text, and sanitized assets.

@@ -43,6 +43,7 @@ configs/settings.yml
 data/*.db
 data/*.db-*
 data/*.sqlite*
+data/exports/
 *.log
 
 # Editors and operating systems

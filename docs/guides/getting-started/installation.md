@@ -129,6 +129,7 @@ For local development, make sure `site/.env.local` uses the local origin:
 ```dotenv
 SITE_URL=http://localhost:3000
 OPPORTUNITIES_DATABASE_PATH=../data/opportunities.db
+OPPORTUNITIES_PUBLIC_EXPORT_DIR=../data/exports
 ```
 
 Start the development server:
@@ -143,7 +144,7 @@ Open:
 http://localhost:3000
 ```
 
-The website reads SQLite in read-only mode. An empty directory is valid when the local database contains no open listings.
+The website reads SQLite and pipeline-generated public exports in read-only mode. An empty directory is valid when the local database contains no open listings; run `uv run opportunities export-public` from the repository root to create empty local CSV/JSON projections when testing the download routes.
 
 After stopping the development server, return to the repository root:
 

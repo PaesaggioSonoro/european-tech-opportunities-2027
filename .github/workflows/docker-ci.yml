@@ -73,9 +73,12 @@ jobs:
       - name: Check CLI image
         run: docker compose run --rm opportunities --help
 
-      - name: Check migration, site database access, and production headers
+      - name: Check migration, site database access, public exports, and production headers
         run: |
           trap 'docker compose down --volumes' EXIT
+
+          docker compose run --rm opportunities db-upgrade
+          docker compose run --rm opportunities export-public
 
           if ! docker compose up --detach site; then
             docker compose logs site opportunities
@@ -83,7 +86,34 @@ jobs:
           fi
 
           for _ in $(seq 1 10); do
-            if docker compose exec --no-TTY site node -e "fetch('http://127.0.0.1:3000').then(response => { const csp = response.headers.get('content-security-policy') ?? ''; const hsts = response.headers.get('strict-transport-security') ?? ''; process.exit(response.ok && csp.includes(\"default-src 'self'\") && hsts.includes('max-age=63072000') ? 0 : 1); }).catch(() => process.exit(1))"; then
+            if docker compose exec --no-TTY site node --input-type=module <<'NODE'
+          const baseUrl = "http://127.0.0.1:3000";
+          const [page, csv, json] = await Promise.all([
+            fetch(baseUrl),
+            fetch(`${baseUrl}/open-opportunities.csv`),
+            fetch(`${baseUrl}/open-opportunities.json`),
+          ]);
+          const csp = page.headers.get("content-security-policy") ?? "";
+          const hsts = page.headers.get("strict-transport-security") ?? "";
+          const csvDisposition = csv.headers.get("content-disposition") ?? "";
+          const jsonDisposition = json.headers.get("content-disposition") ?? "";
+          const csvText = await csv.text();
+          const jsonText = await json.text();
+          const valid =
+            page.ok &&
+            csv.ok &&
+            json.ok &&
+            csp.includes("default-src 'self'") &&
+            hsts.includes("max-age=63072000") &&
+            csvDisposition.includes("open-opportunities.csv") &&
+            jsonDisposition.includes("open-opportunities.json") &&
+            csvText.startsWith(
+              "linkedin_job_id,company,title,location,link,category,industries,employment_type,start_date"
+            ) &&
+            jsonText.trim() === "[]";
+          process.exit(valid ? 0 : 1);
+          NODE
+            then
               exit 0
             fi
             sleep 1

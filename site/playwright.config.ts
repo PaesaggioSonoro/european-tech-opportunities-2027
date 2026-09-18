@@ -1,7 +1,8 @@
 import path from "node:path";
 import {defineConfig, devices} from "@playwright/test";
 
-const testDatabasePath = path.resolve("tests/e2e/.tmp/opportunities.db");
+const testFixtureDirectory = path.resolve("tests/e2e/.tmp");
+const testDatabasePath = path.join(testFixtureDirectory, "opportunities.db");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -28,6 +29,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       OPPORTUNITIES_DATABASE_PATH: testDatabasePath,
+      OPPORTUNITIES_PUBLIC_EXPORT_DIR: testFixtureDirectory,
       SITE_URL: "http://127.0.0.1:3100",
     },
   },

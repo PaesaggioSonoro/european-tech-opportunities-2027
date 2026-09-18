@@ -33,6 +33,7 @@ from opportunities.models.job import DiscoveredJob
 from opportunities.models.search import LinkedInSearchConfig
 from opportunities.pipeline.availability import audit_job_availability
 from opportunities.pipeline.runner import CollectionPipeline, PipelineResult
+from opportunities.public_exports import render_public_exports, validate_public_exports
 from opportunities.readme import ReadmeMetadata, render_readme, validate_readme
 from opportunities.search_registry_docs import (
     render_search_registry_docs,
@@ -54,7 +55,8 @@ error_console = Console(stderr=True)
 app = typer.Typer(
     no_args_is_help=True,
     help=(
-        "Collect strict 2027 European tech internships and new-grad roles into SQLite and README."
+        "Collect strict 2027 European tech internships and new-grad roles into SQLite with "
+        "read-only public projections."
     ),
 )
 
@@ -90,10 +92,10 @@ def scrape(
     ctx: typer.Context,
     search: Annotated[str | None, typer.Option("--search", help="Run one search slug.")] = None,
     no_render: Annotated[
-        bool, typer.Option("--no-render", help="Do not update README after persistence.")
+        bool, typer.Option("--no-render", help="Do not update generated projections.")
     ] = False,
 ) -> None:
-    """Collect internships and new-grad roles, then optionally refresh documentation."""
+    """Collect internships and new-grad roles, then optionally refresh projections."""
     settings = _settings(ctx)
     _require_linkedin_permission(settings)
     repository, engine = _repository(settings)
@@ -112,15 +114,11 @@ def scrape(
             )
             _print_result(result)
             if not no_render and result.successful_searches:
-                render_readme(
-                    settings.readme_path,
-                    repository.list_open_jobs(),
-                    _readme_metadata(repository),
+                _render_projections(settings, repository)
+                console.print(
+                    f"Generated projections updated: {settings.readme_path}; "
+                    f"public exports: {settings.public_export_dir}"
                 )
-                render_search_registry_docs(
-                    _search_registry_docs_path(settings), settings.search_config_dir
-                )
-                console.print(f"README updated: {settings.readme_path}")
         except (SearchRegistryError, OSError, ValueError, ValidationError) as exc:
             error_console.print(f"[red]Scrape failed:[/red] {exc}")
             raise typer.Exit(2) from exc
@@ -133,7 +131,7 @@ def scrape(
 def check_availability(
     ctx: typer.Context,
     no_render: Annotated[
-        bool, typer.Option("--no-render", help="Do not update README after the audit.")
+        bool, typer.Option("--no-render", help="Do not update generated projections.")
     ] = False,
 ) -> None:
     """Check every stored job page and delete explicitly unavailable rows."""
@@ -144,14 +142,7 @@ def check_availability(
         _require_migrations(engine)
         result = asyncio.run(audit_job_availability(settings=settings, repository=repository))
         if not no_render:
-            render_readme(
-                settings.readme_path,
-                repository.list_open_jobs(),
-                _readme_metadata(repository),
-            )
-            render_search_registry_docs(
-                _search_registry_docs_path(settings), settings.search_config_dir
-            )
+            _render_projections(settings, repository)
         console.print(
             f"Checked {result.checked} position(s): {result.available} available, "
             f"{result.deleted} deleted, {result.reopened} reopened, "
@@ -194,22 +185,31 @@ def search_test(ctx: typer.Context, search_slug: str) -> None:
 
 @app.command()
 def render(ctx: typer.Context) -> None:
-    """Refresh generated README and registry documentation."""
+    """Refresh generated README, registry documentation, and public exports."""
     settings = _settings(ctx)
     repository, engine = _repository(settings)
     try:
         _require_migrations(engine)
         _configured_searches(settings)
+        open_job_count = _render_projections(settings, repository)
+        console.print(
+            f"Generated projections updated for {open_job_count} open position(s); "
+            f"public exports: {settings.public_export_dir}."
+        )
+    finally:
+        _dispose_engine(engine)
+
+
+@app.command("export-public")
+def export_public(ctx: typer.Context) -> None:
+    """Generate sanitized CSV and JSON projections of open opportunities."""
+    settings = _settings(ctx)
+    repository, engine = _repository(settings)
+    try:
+        _require_migrations(engine)
         open_jobs = repository.list_open_jobs()
-        render_readme(
-            settings.readme_path,
-            open_jobs,
-            _readme_metadata(repository),
-        )
-        render_search_registry_docs(
-            _search_registry_docs_path(settings), settings.search_config_dir
-        )
-        console.print(f"README updated with {len(open_jobs)} open position(s).")
+        render_public_exports(settings.public_export_dir, open_jobs)
+        console.print(f"Public exports updated for {len(open_jobs)} open position(s).")
     finally:
         _dispose_engine(engine)
 
@@ -282,7 +282,7 @@ def stats(ctx: typer.Context) -> None:
 
 @app.command()
 def validate(ctx: typer.Context) -> None:
-    """Validate database invariants and generated documentation."""
+    """Validate database invariants and generated projections."""
     settings = _settings(ctx)
     repository, engine = _repository(settings)
     try:
@@ -299,6 +299,7 @@ def validate(ctx: typer.Context) -> None:
                 _search_registry_docs_path(settings), settings.search_config_dir
             )
         )
+        errors.extend(validate_public_exports(settings.public_export_dir, open_jobs))
         jobs = repository.list_all_jobs()
         for job in jobs:
             if job.last_seen_at < job.first_seen_at:
@@ -350,6 +351,19 @@ def _dispose_engine(engine: Engine) -> None:
 def _search_registry_docs_path(settings: Settings) -> Path:
     """Resolve registry documentation beside the configured README."""
     return settings.readme_path.parent / "docs" / "guides" / "user-guide" / "search-registry.md"
+
+
+def _render_projections(settings: Settings, repository: Repository) -> int:
+    """Refresh every read-only projection from one open-job snapshot."""
+    open_jobs = repository.list_open_jobs()
+    render_readme(
+        settings.readme_path,
+        open_jobs,
+        _readme_metadata(repository),
+    )
+    render_search_registry_docs(_search_registry_docs_path(settings), settings.search_config_dir)
+    render_public_exports(settings.public_export_dir, open_jobs)
+    return len(open_jobs)
 
 
 def _readme_metadata(repository: Repository) -> ReadmeMetadata:
