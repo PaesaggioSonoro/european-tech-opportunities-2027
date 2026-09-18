@@ -22,6 +22,12 @@ site/playwright-report/
 site/test-results/
 site/tests/e2e/.tmp/
 
+# Local developer context and skills
+.context/**
+!.context/.gitkeep
+.agents/skills/**
+!.agents/skills/.gitkeep
+
 # Local configuration and secrets
 .env
 .env.*

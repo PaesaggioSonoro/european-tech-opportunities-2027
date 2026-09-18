@@ -234,7 +234,7 @@ automated/scrape-update        # manually requested scrape only
 
 Only `README.md` is committed. SQLite state is never committed.
 
-The generated preview remains bounded to five recently posted open opportunities per employment type, regardless of the size of canonical state.
+The generated preview remains bounded to five recently discovered open opportunities per employment type, regardless of the size of canonical state.
 
 The nightly workflow creates or updates its fixed branch and requests a squash auto-merge. Before doing so, it verifies the exact base branch, head branch, title, and changed-file list; the pull request must target `main` and modify only `README.md`. GitHub auto-merge and the repository’s required checks and branch protection must be configured for this to complete. A failed scope check stops the workflow. Scrape-only and availability-only pull requests remain manual-review paths.
 

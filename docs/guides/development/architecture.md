@@ -206,7 +206,7 @@ The renderer creates a deterministic bounded projection containing:
 - total open-job count;
 - latest successful collection time;
 - the public website link;
-- at most five recently posted internships and five recently posted New Grad opportunities.
+- at most five recently discovered internships and five recently discovered New Grad opportunities.
 
 The renderer owns the marked opportunity-count and opportunity-preview regions and replaces the resulting README atomically. Validation reconstructs both expected regions from SQLite and requires exact equality.
 

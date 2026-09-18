@@ -1,4 +1,8 @@
 * text=auto eol=lf
+* linguist-detectable=false
+*.py linguist-detectable=true
+*.ts linguist-detectable=true
+*.tsx linguist-detectable=true
 *.png binary
 *.jpg binary
 *.jpeg binary

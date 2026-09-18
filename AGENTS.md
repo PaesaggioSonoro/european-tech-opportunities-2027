@@ -20,7 +20,7 @@ If a tradeoff is required, choose correctness, safety, reproducibility, and expl
 
 ## Agent Context and Skills
 
-This repository may contain task-specific context under `.context/` and reusable procedures under `.agents/skills/`. Treat both as **lazy-loaded context**, not mandatory startup reading.
+This repository may contain task-specific context under `.context/` and reusable procedures under `.agents/skills/`. Treat both as **lazy-loaded context**, not mandatory startup reading. Both directories are intentionally ignored by Git except for their `.gitkeep` files; never force-add personal context or skills.
 
 ### `.context/`
 

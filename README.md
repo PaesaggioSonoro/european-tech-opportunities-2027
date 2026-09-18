@@ -1,7 +1,7 @@
 <h1 align="center">European Tech Opportunities 2027</h1>
 
 <p align="center">
-  <strong>Find validated technology internships and New Grad opportunities for the 2027 hiring cycle across Europe.</strong>
+  <strong>Find validated 2027 tech internships and new-grad roles across Europe.</strong>
 </p>
 
 <p align="center">
@@ -15,6 +15,9 @@
   <a href="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/python-ci.yml">
     <img src="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/python-ci.yml/badge.svg" alt="Python CI status" />
   </a>
+  <a href="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/site-ci.yml">
+    <img src="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/site-ci.yml/badge.svg" alt="Site CI status" />
+  </a>
 <!-- BEGIN PYTHON COVERAGE BADGE -->
   <a href="#python-quality-baseline">
     <img src="https://img.shields.io/badge/critical_path_coverage-90.1%25_%7C_82.7%25_branches-brightgreen" alt="Critical path coverage: 90.1%, including 82.7% branch coverage" />
@@ -22,9 +25,6 @@
   <!-- END PYTHON COVERAGE BADGE -->
   <a href="LICENSE">
     <img src="https://img.shields.io/github/license/simonesiega/european-tech-opportunities-2027" alt="MIT license" />
-  </a>
-  <a href="https://github.com/simonesiega/european-tech-opportunities-2027/stargazers">
-    <img src="https://img.shields.io/github/stars/simonesiega/european-tech-opportunities-2027?style=flat" alt="GitHub stars" />
   </a>
 </p>
 
@@ -38,10 +38,10 @@
 <!-- END OPPORTUNITY COUNTS -->
 
 <p align="center">
-  <a href="https://opportunities2027.simonesiega.com/"><strong>Open the searchable opportunity directory →</strong></a>
+  <a href="https://opportunities2027.simonesiega.com/"><strong>Explore the live directory →</strong></a>
 </p>
 
-## Website preview
+## Live directory
 
 <p align="center">
   <img
@@ -56,17 +56,19 @@
   />
 </p>
 
-The public directory has surpassed **1,000 unique visitors since launch**. It is the primary user interface, with full-text search; Internship and New Grad filtering; company, country, and category filters; sorting; pagination; light and dark themes; and direct links to the original listings.
+The public directory has surpassed **1,000 unique visitors across 50+ countries since launch**. Search hundreds of validated opportunities by company, country, category, and employment type, with sortable results, pagination, shareable filters, and direct links to the original listings.
 
-## Overview
+## Why this exists
 
-European Tech Opportunities 2027 is an open-source data product that combines a searchable public directory with an automated collection, classification, and lifecycle pipeline. It removes common job-search noise, including mixed hiring cycles, senior roles, unrelated positions, and unsupported locations, by publishing only listings that pass deterministic checks.
+Finding early-career tech roles across Europe is noisy: listings often mix hiring cycles, senior positions, unrelated roles, stale jobs, and unsupported locations.
 
-The project intentionally favors precision over coverage. Relevant listings may be absent when they fall outside the configured searches or do not provide enough evidence to satisfy every publication rule.
+European Tech Opportunities 2027 turns that stream into a focused dataset of validated internships and new-grad roles. An automated pipeline discovers, classifies, tracks, and publishes only opportunities that satisfy explicit acceptance rules.
 
-## Opportunity directory
+The project intentionally favors **precision over coverage**. Ambiguous listings are excluded rather than guessed into the dataset.
 
-Browse the complete live collection at **[opportunities2027.simonesiega.com](https://opportunities2027.simonesiega.com/)**. The repository keeps up to five of the most recently posted opportunities for each employment type as a lightweight preview; use the website for the complete searchable collection.
+## Latest opportunities
+
+The README shows up to five opportunities for each employment type as a lightweight preview; use the live directory for the complete searchable collection.
 
 <!-- BEGIN OPPORTUNITIES -->
 **Open opportunities:** 694 (Internships: 320 · New Grad: 374)<br>
@@ -76,7 +78,7 @@ Browse and filter the complete directory at **[https://opportunities2027.simones
 
 ### Latest New Grad opportunities
 
-Showing the 5 most recently posted of 374 open New Grad opportunities:
+Showing the 5 most recently discovered of 374 open New Grad opportunities:
 
 | Company | Title | Location | Listing |
 |---|---|---|---|
@@ -88,7 +90,7 @@ Showing the 5 most recently posted of 374 open New Grad opportunities:
 
 ### Latest internships
 
-Showing the 5 most recently posted of 320 open internships:
+Showing the 5 most recently discovered of 320 open internships:
 
 | Company | Title | Location | Listing |
 |---|---|---|---|
@@ -102,6 +104,37 @@ Showing the 5 most recently posted of 320 open internships:
 Listings can change or expire. Verify the role, eligibility requirements, location, deadline, compensation, and visa or work-authorization requirements on the original listing before applying.
 
 Missing a relevant opportunity? [Suggest a listing](https://github.com/simonesiega/european-tech-opportunities-2027/issues/new?template=add-position.yml).
+
+## Engineering highlights
+
+- **Python data pipeline:** bounded asynchronous collection, normalization, deterministic classification, and lifecycle processing.
+- **TypeScript web application:** server-rendered Next.js directory with search, filters, sorting, pagination, and shareable URLs.
+- **Canonical lifecycle state:** SQLite tracks provenance, first/last-seen timestamps, isolated search outcomes, conservative closure evidence, and daily availability checks.
+- **Production-grade validation:** strict typing, unit and integration tests, Playwright end-to-end tests, branch coverage gates, and parsing/classification benchmarks.
+- **Automated operations:** Alembic migrations, scheduled collection, availability checks, restore-verified backups, CI, and atomic deployment.
+
+## How it works
+
+<div align="center">
+<pre>
+search definitions + validation rules
+↓
+bounded LinkedIn guest HTML collection
+↓
+normalization + deterministic classification
+↓
+transactional SQLite lifecycle state
+↓
+┌──────────────────────┬──────────────────────┐
+│ searchable website   │ README preview       │
+│ all open listings    │ 5/type latest rows   │
+└──────────────────────┴──────────────────────┘
+</pre>
+</div>
+
+SQLite is the canonical store. The website and README are read-only projections of accepted listings and their lifecycle state.
+
+See the [architecture guide](docs/guides/development/architecture.md) for the complete data flow, component boundaries, and extension policy.
 
 ## Publication rules
 
@@ -118,13 +151,9 @@ A listing is published only when all six checks pass:
 
 Ambiguous evidence is excluded rather than guessed. Search-page absence never closes a listing; only explicit unavailability evidence can change lifecycle state. See [Architecture](docs/guides/development/architecture.md) and [Database lifecycle](docs/guides/operations/database.md) for the exact acceptance and closure rules.
 
-## Engineering highlights
+## Quality & testing
 
-- **End-to-end data product:** bounded asynchronous Python collection and a searchable server-rendered TypeScript/Next.js opportunity directory.
-- **Deterministic classification:** explicit rules assign `internship` or `new-grad`, then verify posting recency, cycle, technology category, seniority, and European location.
-- **Transactional lifecycle state:** SQLite persistence records provenance, first/last-seen timestamps, isolated search outcomes, conservative closure evidence, and daily full-state availability checks.
-- **Tested web application:** query-parameter-backed filtering, sortable and paginated results, unit tests, Playwright end-to-end coverage, TypeScript checks, and production-build validation.
-- **Production engineering:** Alembic migrations, scheduled automation, restore-verified timestamped backups, atomic deployment, strict typing, CI across Python/site/containers, thresholded combined statement-and-branch coverage, and parsing/classification benchmarks.
+Critical Python classification and lifecycle paths are protected by branch-aware coverage gates. The TypeScript application is independently validated through formatting, linting, strict type checking, production builds, unit tests, and Playwright end-to-end tests.
 
 ### Python quality baseline
 
@@ -144,32 +173,9 @@ The badge and table are generated from the same coverage report used by the qual
 
 [Site CI](https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/site-ci.yml) separately enforces formatting, linting, TypeScript type checking, a production build, unit tests, and Playwright end-to-end tests.
 
-## How it works
-
-<div align="center">
-<pre>
-validated search definitions
-↓
-bounded LinkedIn guest HTML collection
-↓
-strict type and technology classification
-↓
-transactional SQLite lifecycle state
-↓
-┌──────────────────────┬──────────────────────┐
-│ searchable website   │ README preview       │
-│ all open listings    │ 5/type latest rows   │
-└──────────────────────┴──────────────────────┘
-</pre>
-</div>
-
-SQLite is the canonical store. The website and README are read-only projections of accepted listings and their lifecycle state.
-
-See the [architecture guide](docs/guides/development/architecture.md) for the complete data flow, component boundaries, and extension policy.
-
 ## Run locally
 
-Requirements: Python 3.12+, [`uv`](https://docs.astral.sh/uv/), and Git.
+Requirements: Python 3.12+, [`uv`](https://docs.astral.sh/uv/), and Git. Node.js and Bun are required only for local website development.
 
 ```bash
 git clone https://github.com/simonesiega/european-tech-opportunities-2027.git
@@ -198,11 +204,9 @@ Use the [documentation hub](docs/README.md) to find the canonical guide for each
 ## Responsible operation
 
 > [!IMPORTANT]
-> LinkedIn collection is disabled by default. Public accessibility is not authorization to automate access. The authorization interlock records an operator decision; it does not grant permission.
+> LinkedIn collection is disabled by default. Public accessibility is not authorization to automate access.
 
-The project does not use credentials, sessions, browser automation, private endpoints, proxies, CAPTCHA bypasses, or anti-bot evasion. It is not affiliated with or endorsed by LinkedIn or any listed employer.
-
-Read [`SECURITY.md`](SECURITY.md) before operating collection infrastructure.
+The project uses no credentials, authenticated sessions, browser automation, private endpoints, proxies, CAPTCHA bypasses, or anti-bot evasion. It is not affiliated with or endorsed by LinkedIn or any listed employer. See [`SECURITY.md`](SECURITY.md) for the complete source-access and operational policy.
 
 ## Contributing
 
@@ -212,7 +216,7 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Partici
 
 ## License
 
-Original project code and documentation are licensed under the [MIT License](LICENSE) unless a file or third-party asset states otherwise. [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) preserves its Contributor Covenant attribution, and third-party source-site screenshots or other third-party material remain subject to their respective terms rather than being relicensed by the project MIT License.
+Project code and documentation are available under the [MIT License](LICENSE). Third-party assets remain subject to their respective licenses and terms.
 
 ## Contributors
 

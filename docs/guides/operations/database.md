@@ -349,7 +349,7 @@ The website contract belongs to the [website guide](../user-guide/website.md#rea
 - total open-job count;
 - latest successful collection time;
 - the public website link;
-- at most five recently posted open internships and five recently posted open New Grad opportunities.
+- at most five recently discovered open internships and five recently discovered open New Grad opportunities.
 
 The renderer owns the marked opportunity-count and opportunity-preview regions and replaces the resulting README atomically.
 

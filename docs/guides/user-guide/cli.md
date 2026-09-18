@@ -193,7 +193,7 @@ The README projection includes:
 - total open-job count;
 - latest successful collection time;
 - the public website link;
-- at most five recently posted internships and five recently posted New Grad opportunities.
+- at most five recently discovered internships and five recently discovered New Grad opportunities.
 
 The generated registry-layout counts in [`search-registry.md`](search-registry.md) are refreshed from `configs/searches/` at the same time.
 
