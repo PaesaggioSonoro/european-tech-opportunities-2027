@@ -38,7 +38,7 @@ This is the canonical website guide for the project. The [live website](https://
 The directory provides:
 
 - free-text search;
-- company, country, technology-category, and employment-type filters;
+- company, country, technology-category, employment-type, and first-seen recency filters;
 - sortable columns;
 - pagination with selectable page size;
 - light and dark themes stored as browser preferences;
@@ -66,7 +66,8 @@ Filters can be combined by:
 - company;
 - country;
 - technology category;
-- employment type, using a single-select choice of Internship or New Grad.
+- employment type, using a single-select choice of Internship or New Grad;
+- first-seen recency, using Last 24 hours, Last 7 days, or Last 30 days.
 
 Sortable columns include:
 
@@ -161,6 +162,7 @@ The directory recognizes these query parameters:
 | `country` | Exact country option |
 | `category` | Exact internal technology category |
 | `type` | Exact normalized employment type: `internship` or `new-grad` |
+| `first-seen` | Recency window based on the directory's first observation: `24-hours`, `7-days`, or `30-days` |
 | `sort` | Sort field and direction, such as `first-seen-desc`, `company-asc`, `role-desc`, or `location-asc` |
 | `page-size` | Rows per page: `10`, `20`, `30`, `50`, or `100` |
 | `page` | One-based result page |
@@ -168,10 +170,12 @@ The directory recognizes these query parameters:
 For example:
 
 ```text
-https://opportunities2027.simonesiega.com/?country=Germany&type=internship&sort=first-seen-desc&page=2
+https://opportunities2027.simonesiega.com/?country=Germany&type=internship&first-seen=7-days&sort=first-seen-desc
 ```
 
 Selecting a filter, sorting a column, changing page size, or moving between pages updates browser history, and browser back/forward navigation restores the complete earlier view. Search typing replaces the current history entry to avoid creating one entry per keystroke. Changing filters, sorting, or page size returns the view to page one. Reset removes the filter parameters and current page while preserving sorting, page size, and unrelated parameters.
+
+The first-seen filter uses the immutable canonical `first_seen_at` value relative to the directory request time. It describes when this project first accepted the listing, not when the employer posted it.
 
 Unsupported filter, sort, page-size, and page values are ignored or safely constrained. Query parameters are untrusted presentation input and never reach a database write path.
 

@@ -28,6 +28,7 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
+      NEXT_DIST_DIR: ".next-e2e",
       OPPORTUNITIES_DATABASE_PATH: testDatabasePath,
       OPPORTUNITIES_PUBLIC_EXPORT_DIR: testFixtureDirectory,
       SITE_URL: "http://127.0.0.1:3100",

@@ -58,7 +58,7 @@
   />
 </p>
 
-The public directory has surpassed **1,000 unique visitors across 50+ countries since launch**. Search hundreds of validated opportunities by company, country, category, and employment type, with sortable results, pagination, shareable directory views, direct links to the original listings, and sanitized [CSV](https://opportunities2027.simonesiega.com/open-opportunities.csv) and [JSON](https://opportunities2027.simonesiega.com/open-opportunities.json) downloads.
+The public directory has surpassed **1,000 unique visitors across 50+ countries since launch**. Search hundreds of validated opportunities by company, country, category, employment type, and first-seen recency, with sortable results, pagination, shareable directory views, direct links to the original listings, and sanitized [CSV](https://opportunities2027.simonesiega.com/open-opportunities.csv) and [JSON](https://opportunities2027.simonesiega.com/open-opportunities.json) downloads.
 
 ## Why this exists
 

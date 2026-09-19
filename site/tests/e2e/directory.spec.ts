@@ -85,12 +85,35 @@ test("filters one employment type at a time", async ({page}) => {
   await expectRoleCount(page, 11);
 });
 
+test("filters opportunities by when they were first seen", async ({page}) => {
+  await openDirectory(page);
+
+  const firstSeen = page.getByLabel("First seen");
+  await firstSeen.selectOption("24-hours");
+  await expect(page).toHaveURL(/first-seen=24-hours/);
+  await expectRoleCount(page, 2);
+
+  await firstSeen.selectOption("7-days");
+  await expect(page).toHaveURL(/first-seen=7-days/);
+  await expectRoleCount(page, 7);
+
+  await firstSeen.selectOption("30-days");
+  await expect(page).toHaveURL(/first-seen=30-days/);
+  await expectRoleCount(page, 11);
+
+  await page.getByRole("button", {name: "Reset"}).click();
+  await expect(firstSeen).toHaveValue("all");
+  await expect(page).not.toHaveURL(/first-seen=/);
+  await expectRoleCount(page, 12);
+});
+
 test("restores filters from a shared URL and browser history", async ({page}) => {
-  await openDirectory(page, "/?q=analyst&country=France&type=new-grad");
+  await openDirectory(page, "/?q=analyst&country=France&type=new-grad&first-seen=30-days");
 
   await expect(page.getByLabel("Search")).toHaveValue("analyst");
   await expect(page.getByLabel("Location")).toHaveValue("France");
   await expect(page.getByLabel("Employment type")).toHaveValue("new-grad");
+  await expect(page.getByLabel("First seen")).toHaveValue("30-days");
   await expectRoleCount(page, 1);
   await expect(
     page.getByRole("link", {name: "Graduate Data Analyst 2027", exact: true})
@@ -128,8 +151,9 @@ test("restores sorting, page, and page size from a shared URL", async ({page}) =
 });
 
 test("falls back safely for unsupported directory view parameters", async ({page}) => {
-  await openDirectory(page, "/?sort=unsupported&page=-2&page-size=11");
+  await openDirectory(page, "/?first-seen=tomorrow&sort=unsupported&page=-2&page-size=11");
 
+  await expect(page.getByLabel("First seen")).toHaveValue("all");
   await expect(page.getByRole("columnheader", {name: "First seen"})).toHaveAttribute(
     "aria-sort",
     "descending"

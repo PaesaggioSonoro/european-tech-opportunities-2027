@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default function Home() {
   const {opportunities, lastUpdatedAt} = getDirectoryData();
+  const referenceTime = new Date().toISOString();
   const structuredData = buildStructuredData(siteUrl, lastUpdatedAt);
 
   return (
@@ -19,7 +20,7 @@ export default function Home() {
       />
       <SiteHeader />
       <main className="flex-1">
-        <OpportunityDirectory opportunities={opportunities} />
+        <OpportunityDirectory opportunities={opportunities} referenceTime={referenceTime} />
       </main>
       <SiteFooter lastUpdatedAt={lastUpdatedAt} />
     </div>

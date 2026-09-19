@@ -1,9 +1,14 @@
 import {useMemo} from "react";
 import {usePathname, useSearchParams} from "next/navigation";
-import {ALL_FILTER_VALUE, getCountries} from "@/lib/opportunity-presentation";
+import {
+  ALL_FILTER_VALUE,
+  getCountries,
+  parseOpportunityTimestamp,
+} from "@/lib/opportunity-presentation";
 import {
   DIRECTORY_PAGE_SIZES,
   DIRECTORY_SORTS,
+  FIRST_SEEN_OPTIONS,
   type DirectoryPageSize,
   type DirectorySort,
 } from "@/types/directory";
@@ -12,6 +17,7 @@ import type {EmploymentType, Opportunity} from "@/types/opportunity";
 const EMPLOYMENT_TYPE_OPTIONS: EmploymentType[] = ["internship", "new-grad"];
 const DEFAULT_SORT: DirectorySort = "first-seen-desc";
 const DEFAULT_PAGE_SIZE: DirectoryPageSize = 10;
+const FIRST_SEEN_VALUES = FIRST_SEEN_OPTIONS.map((option) => option.value);
 
 const FILTER_PARAMETERS = {
   query: "q",
@@ -19,6 +25,7 @@ const FILTER_PARAMETERS = {
   location: "country",
   category: "category",
   employmentType: "type",
+  firstSeen: "first-seen",
 } as const;
 
 const VIEW_PARAMETERS = {
@@ -33,7 +40,7 @@ type DirectoryParameter =
   | (typeof VIEW_PARAMETERS)[keyof typeof VIEW_PARAMETERS];
 type HistoryMode = "push" | "replace";
 
-export function useOpportunityDirectory(opportunities: Opportunity[]) {
+export function useOpportunityDirectory(opportunities: Opportunity[], referenceTime: string) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -43,6 +50,7 @@ export function useOpportunityDirectory(opportunities: Opportunity[]) {
       locations: [...new Set(opportunities.flatMap((item) => getCountries(item.location)))].sort(),
       categories: [...new Set(opportunities.map((item) => item.category))].sort(),
       employmentTypes: EMPLOYMENT_TYPE_OPTIONS,
+      firstSeenPeriods: FIRST_SEEN_VALUES,
     }),
     [opportunities]
   );
@@ -55,11 +63,19 @@ export function useOpportunityDirectory(opportunities: Opportunity[]) {
     searchParams.get(FILTER_PARAMETERS.employmentType),
     options.employmentTypes
   );
+  const firstSeen = validOption(
+    searchParams.get(FILTER_PARAMETERS.firstSeen),
+    options.firstSeenPeriods
+  );
+  const firstSeenOption = FIRST_SEEN_OPTIONS.find((option) => option.value === firstSeen);
+  const referenceTimestamp = parseOpportunityTimestamp(referenceTime);
+  const firstSeenCutoff = firstSeenOption ? referenceTimestamp - firstSeenOption.durationMs : null;
 
   const filteredOpportunities = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return opportunities.filter((opportunity) => {
+      const firstSeenTimestamp = parseOpportunityTimestamp(opportunity.firstSeenAt);
       const searchableText = [
         opportunity.company,
         opportunity.title,
@@ -77,10 +93,21 @@ export function useOpportunityDirectory(opportunities: Opportunity[]) {
         (company === ALL_FILTER_VALUE || opportunity.company === company) &&
         (location === ALL_FILTER_VALUE || getCountries(opportunity.location).includes(location)) &&
         (category === ALL_FILTER_VALUE || opportunity.category === category) &&
-        (employmentType === ALL_FILTER_VALUE || opportunity.employmentType === employmentType)
+        (employmentType === ALL_FILTER_VALUE || opportunity.employmentType === employmentType) &&
+        (firstSeenCutoff === null ||
+          (firstSeenTimestamp >= firstSeenCutoff && firstSeenTimestamp <= referenceTimestamp))
       );
     });
-  }, [category, company, employmentType, location, opportunities, query]);
+  }, [
+    category,
+    company,
+    employmentType,
+    firstSeenCutoff,
+    location,
+    opportunities,
+    query,
+    referenceTimestamp,
+  ]);
 
   const sort = validSort(searchParams.get(VIEW_PARAMETERS.sort));
   const pageSize = validPageSize(searchParams.get(VIEW_PARAMETERS.pageSize));
@@ -132,13 +159,14 @@ export function useOpportunityDirectory(opportunities: Opportunity[]) {
   }
 
   return {
-    filters: {query, company, location, category, employmentType},
+    filters: {query, company, location, category, employmentType, firstSeen},
     filterSetters: {
       setQuery: (value: string) => setFilter("query", value, "replace"),
       setCompany: (value: string) => setFilter("company", value, "push"),
       setLocation: (value: string) => setFilter("location", value, "push"),
       setCategory: (value: string) => setFilter("category", value, "push"),
       setEmploymentType: (value: string) => setFilter("employmentType", value, "push"),
+      setFirstSeen: (value: string) => setFilter("firstSeen", value, "push"),
     },
     view: {sort, page, pageSize},
     viewSetters: {
@@ -168,7 +196,8 @@ export function useOpportunityDirectory(opportunities: Opportunity[]) {
       company !== ALL_FILTER_VALUE ||
       location !== ALL_FILTER_VALUE ||
       category !== ALL_FILTER_VALUE ||
-      employmentType !== ALL_FILTER_VALUE,
+      employmentType !== ALL_FILTER_VALUE ||
+      firstSeen !== ALL_FILTER_VALUE,
     clearFilters,
   };
 }

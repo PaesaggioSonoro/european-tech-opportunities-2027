@@ -47,6 +47,9 @@ const insertJob = database.prepare(`
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')
 `);
 
+const now = Date.now();
+const hoursAgo = (hours) => new Date(now - hours * 60 * 60 * 1000).toISOString();
+
 const jobs = [
   [
     "1000000001",
@@ -58,7 +61,7 @@ const jobs = [
     "Software Development",
     "internship",
     "June 2027",
-    "2026-07-10T09:00:00+00:00",
+    hoursAgo(40 * 24),
   ],
   [
     "1000000002",
@@ -70,7 +73,7 @@ const jobs = [
     "Computer and Network Security",
     "internship",
     null,
-    "2026-07-11T09:00:00+00:00",
+    hoursAgo(20 * 24),
   ],
   [
     "1000000003",
@@ -82,9 +85,11 @@ const jobs = [
     "Information Technology",
     "new-grad",
     "Summer 2027",
-    "2026-07-12T09:00:00+00:00",
+    hoursAgo(8 * 24),
   ],
 ];
+
+const exampleAgeHours = [28 * 24, 14 * 24, 6 * 24, 5 * 24, 4 * 24, 3 * 24, 2 * 24, 12, 2];
 
 for (let index = 1; index <= 9; index += 1) {
   jobs.push([
@@ -97,7 +102,7 @@ for (let index = 1; index <= 9; index += 1) {
     "Software Development",
     "internship",
     null,
-    `2026-07-${String(12 + index).padStart(2, "0")}T09:00:00+00:00`,
+    hoursAgo(exampleAgeHours[index - 1]),
   ]);
 }
 

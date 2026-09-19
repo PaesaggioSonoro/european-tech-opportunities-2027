@@ -11,13 +11,14 @@ import type {Opportunity} from "@/types/opportunity";
 
 type OpportunityDirectoryProps = {
   opportunities: Opportunity[];
+  referenceTime: string;
 };
 
 const subscribeToHydration = () => () => undefined;
 const getClientHydrationState = () => true;
 const getServerHydrationState = () => false;
 
-export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps) {
+export function OpportunityDirectory({opportunities, referenceTime}: OpportunityDirectoryProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const isInteractive = useSyncExternalStore(
     subscribeToHydration,
@@ -33,7 +34,7 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
     filteredOpportunities,
     hasActiveFilters,
     clearFilters,
-  } = useOpportunityDirectory(opportunities);
+  } = useOpportunityDirectory(opportunities, referenceTime);
 
   useEffect(() => {
     function focusSearch(event: KeyboardEvent) {
@@ -103,6 +104,7 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
         onLocationChange={filterSetters.setLocation}
         onCategoryChange={filterSetters.setCategory}
         onEmploymentTypeChange={filterSetters.setEmploymentType}
+        onFirstSeenChange={filterSetters.setFirstSeen}
         onClear={clearFilters}
       />
       <OpportunityList

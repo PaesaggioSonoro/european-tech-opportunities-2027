@@ -37,9 +37,11 @@ export function getEmploymentTypeHue(employmentType: string): number {
   return hues[employmentType] ?? 210;
 }
 
-export function formatPublishedDate(value: string): string {
+export function parseOpportunityTimestamp(value: string): number {
   const isoValue = value.replace(" ", "T");
-  const date = new Date(/(?:Z|[+-]\d{2}:\d{2})$/.test(isoValue) ? isoValue : `${isoValue}Z`);
+  return Date.parse(/(?:Z|[+-]\d{2}:\d{2})$/.test(isoValue) ? isoValue : `${isoValue}Z`);
+}
 
-  return PUBLISHED_DATE_FORMATTER.format(date);
+export function formatPublishedDate(value: string): string {
+  return PUBLISHED_DATE_FORMATTER.format(new Date(parseOpportunityTimestamp(value)));
 }

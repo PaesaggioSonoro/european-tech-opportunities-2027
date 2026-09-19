@@ -4,6 +4,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {cn} from "@/lib/cn";
 import {ALL_FILTER_VALUE, formatCategory} from "@/lib/opportunity-presentation";
+import {FIRST_SEEN_OPTIONS} from "@/types/directory";
 
 type OpportunityFiltersProps = {
   searchInputRef: RefObject<HTMLInputElement | null>;
@@ -13,12 +14,14 @@ type OpportunityFiltersProps = {
     location: string;
     category: string;
     employmentType: string;
+    firstSeen: string;
   };
   options: {
     companies: string[];
     locations: string[];
     categories: string[];
     employmentTypes: string[];
+    firstSeenPeriods: string[];
   };
   hasActiveFilters: boolean;
   onQueryChange: (value: string) => void;
@@ -26,17 +29,31 @@ type OpportunityFiltersProps = {
   onLocationChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onEmploymentTypeChange: (value: string) => void;
+  onFirstSeenChange: (value: string) => void;
   onClear: () => void;
 };
 
 type FilterSelectProps = {
   label: string;
   value: string;
-  options: string[];
+  options: readonly string[];
+  allLabel?: string;
+  formatOption?: (option: string) => string;
   onChange: (value: string) => void;
 };
 
-function FilterSelect({label, value, options, onChange}: FilterSelectProps) {
+function formatFirstSeenOption(option: string): string {
+  return FIRST_SEEN_OPTIONS.find((candidate) => candidate.value === option)?.label ?? option;
+}
+
+function FilterSelect({
+  label,
+  value,
+  options,
+  allLabel = "All",
+  formatOption = (option) => option,
+  onChange,
+}: FilterSelectProps) {
   return (
     <label className="flex min-w-0 flex-col gap-[7px]">
       <span className="text-[11px] font-[550] text-[var(--text-soft)]">{label}</span>
@@ -46,12 +63,10 @@ function FilterSelect({label, value, options, onChange}: FilterSelectProps) {
           value={value}
           onChange={(event) => onChange(event.target.value)}
         >
-          <option value={ALL_FILTER_VALUE}>All</option>
+          <option value={ALL_FILTER_VALUE}>{allLabel}</option>
           {options.map((option) => (
             <option key={option} value={option}>
-              {label === "Category" || label === "Employment type"
-                ? formatCategory(option)
-                : option}
+              {formatOption(option)}
             </option>
           ))}
         </select>
@@ -74,18 +89,19 @@ export function OpportunityFilters({
   onLocationChange,
   onCategoryChange,
   onEmploymentTypeChange,
+  onFirstSeenChange,
   onClear,
 }: OpportunityFiltersProps) {
   return (
     <div
-      className="mt-7 grid grid-cols-[minmax(260px,1.5fr)_repeat(4,minmax(130px,0.7fr))_auto] gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_1px_2px_rgb(0_0_0/3%)] max-[1040px]:grid-cols-3 max-[620px]:grid-cols-1 max-[620px]:p-3.5"
+      className="mt-7 grid grid-cols-[minmax(250px,1.5fr)_repeat(5,minmax(130px,1fr))_88px] gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_1px_2px_rgb(0_0_0/3%)] max-[1180px]:grid-cols-3 max-[620px]:grid-cols-1 max-[620px]:p-3.5"
       role="search"
       aria-label="Opportunity filters"
     >
       <label
         className={cn(
           "flex min-w-0 flex-col gap-[7px]",
-          "max-[1040px]:col-span-full max-[620px]:col-span-1"
+          "max-[1180px]:col-span-full max-[620px]:col-span-1"
         )}
       >
         <span className="text-[11px] font-[550] text-[var(--text-soft)]">Search</span>
@@ -106,6 +122,14 @@ export function OpportunityFilters({
       </label>
 
       <FilterSelect
+        label="First seen"
+        value={filters.firstSeen}
+        options={options.firstSeenPeriods}
+        allLabel="Any time"
+        formatOption={formatFirstSeenOption}
+        onChange={onFirstSeenChange}
+      />
+      <FilterSelect
         label="Company"
         value={filters.company}
         options={options.companies}
@@ -121,22 +145,28 @@ export function OpportunityFilters({
         label="Category"
         value={filters.category}
         options={options.categories}
+        formatOption={formatCategory}
         onChange={onCategoryChange}
       />
       <FilterSelect
         label="Employment type"
         value={filters.employmentType}
         options={options.employmentTypes}
+        formatOption={formatCategory}
         onChange={onEmploymentTypeChange}
       />
 
       {hasActiveFilters ? (
-        <Button variant="outline" className="self-end max-[620px]:w-full" onClick={onClear}>
+        <Button
+          variant="outline"
+          className="w-[88px] self-end justify-self-start max-[620px]:w-full max-[620px]:justify-self-stretch"
+          onClick={onClear}
+        >
           <X aria-hidden="true" />
           Reset
         </Button>
       ) : (
-        <span className="w-[88px] max-[620px]:hidden" aria-hidden="true" />
+        <span className="w-[88px] justify-self-start max-[620px]:hidden" aria-hidden="true" />
       )}
     </div>
   );
