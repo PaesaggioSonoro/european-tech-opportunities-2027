@@ -1,4 +1,5 @@
 import {expect, test} from "@playwright/test";
+import {siteConfig} from "@/lib/site-config";
 import {expectRoleCount, openDirectory} from "./helpers";
 
 test("downloads sanitized public CSV and JSON exports", async ({page, request}) => {
@@ -245,10 +246,10 @@ test("keeps directory controls usable at a mobile viewport", async ({page}) => {
 test("publishes canonical SEO and crawler metadata", async ({page, request}) => {
   await openDirectory(page, "/?company=Acme+Labs");
 
-  await expect(page).toHaveTitle("European Tech Opportunities 2027");
+  await expect(page).toHaveTitle(siteConfig.name);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
-    "Validated 2027 tech internships and New Grad roles across Europe."
+    siteConfig.description
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -262,7 +263,10 @@ test("publishes canonical SEO and crawler metadata", async ({page, request}) => 
     "content",
     "summary_large_image"
   );
-  await expect(page.locator('meta[name="author"]')).toHaveAttribute("content", "Simone Siega");
+  await expect(page.locator('meta[name="author"]')).toHaveAttribute(
+    "content",
+    siteConfig.maintainer.name
+  );
   await expect(page.locator('script[src="https://cloud.umami.is/script.js"]')).toHaveCount(0);
   await expect(page.getByText("Last updated: 17 Jul 2026")).toBeVisible();
 
@@ -292,10 +296,10 @@ test("publishes canonical SEO and crawler metadata", async ({page, request}) => 
     id: "/",
     scope: "/",
     start_url: "/",
-    name: "European Tech Opportunities 2027",
-    short_name: "Opportunities ’27",
-    description: "Validated 2027 tech internships and New Grad roles across Europe.",
-    lang: "en-GB",
+    name: siteConfig.name,
+    short_name: siteConfig.shortName,
+    description: siteConfig.description,
+    lang: siteConfig.language,
     dir: "ltr",
   });
 

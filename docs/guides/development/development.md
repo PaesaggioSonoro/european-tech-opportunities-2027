@@ -262,7 +262,7 @@ Integration coverage includes:
 
 `make coverage` measures branch coverage for classification, collection orchestration, availability auditing, and repository lifecycle state. The combined threshold is 85%; terminal, XML, JSON, and HTML reports are written under the ignored `quality-reports/` directory.
 
-The command also refreshes the generated coverage badge and table in the root README from the JSON report, so it may intentionally modify `README.md`. CI requires the committed metrics to match its report, publishes the reports as a 30-day artifact, and includes the coverage table in its job summary. The current measured values are summarized in the root [Python quality baseline](../../../README.md#python-quality-baseline).
+The command also refreshes the generated coverage table in the root README from the JSON report, so it may intentionally modify `README.md`. CI requires the committed metrics to match its report, publishes the reports as a 30-day artifact, and includes the coverage table in its job summary. The current measured values are summarized in the root [Python quality baseline](../../../README.md#python-quality-baseline).
 
 `make benchmark` runs two offline microbenchmarks against representative fixtures: LinkedIn search-page parsing and a complete classifier decision. Benchmark JSON is written to `quality-reports/benchmark.json` and published with the CI quality reports. Results are intended for trend comparison across equivalent runners, not as portable absolute timing guarantees.
 
@@ -307,7 +307,7 @@ These variables do not grant permission. CI does not run live tests, and an acce
 
 The root README contains one opportunity-count marker pair and one opportunity-preview marker pair. `src/opportunities/readme.py` owns the opportunity metadata, latest successful collection time, website link, and bounded previews of five internships and five New Grad opportunities. `src/opportunities/public_exports.py` separately owns the sanitized open-opportunity CSV and JSON projections.
 
-Separate coverage markers surround the badge and quality table owned by `scripts/coverage_docs.py`. `make coverage` refreshes them from `quality-reports/coverage.json`, while CI uses `--check` to reject stale committed metrics.
+Coverage markers surround the quality table owned by `scripts/coverage_docs.py`. `make coverage` refreshes it from `quality-reports/coverage.json`, while CI uses `--check` to reject stale committed metrics.
 
 Do not edit any generated region or reproduce a complete marker pair in examples.
 

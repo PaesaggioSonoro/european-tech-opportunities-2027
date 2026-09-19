@@ -23,10 +23,6 @@ _ROOT = find_project_root(Path(__file__))
 # Keep coverage-owned content separate from the opportunity regions managed by
 # opportunities.readme. Exact marker counts prevent a malformed README from being
 # partially or ambiguously rewritten.
-_BADGE_PATTERN = re.compile(
-    r"<!-- BEGIN PYTHON COVERAGE BADGE -->\n.*?\n\s*<!-- END PYTHON COVERAGE BADGE -->",
-    re.DOTALL,
-)
 _TABLE_PATTERN = re.compile(
     r"<!-- BEGIN PYTHON COVERAGE -->\n.*?\n<!-- END PYTHON COVERAGE -->",
     re.DOTALL,
@@ -45,7 +41,6 @@ class CoverageMetrics:
     branches: str
     classifier_branches: str
     required: str
-    passing: bool
 
 
 def load_metrics(coverage_path: Path, pyproject_path: Path) -> CoverageMetrics:
@@ -61,7 +56,6 @@ def load_metrics(coverage_path: Path, pyproject_path: Path) -> CoverageMetrics:
     settings = _mapping(coverage.get("report"), name="pyproject coverage report section")
     precision = _precision(settings.get("precision", 0))
     required = _percentage(settings.get("fail_under"), name="coverage fail_under")
-    combined = _percentage(totals.get("percent_covered"), name="percent_covered")
 
     return CoverageMetrics(
         combined=_display_percentage(
@@ -80,26 +74,11 @@ def load_metrics(coverage_path: Path, pyproject_path: Path) -> CoverageMetrics:
             display_key="percent_branches_covered_display",
         ),
         required=f"{required:.{precision}f}",
-        passing=combined >= required,
     )
 
 
 def render_coverage_docs(readme: str, metrics: CoverageMetrics) -> str:
-    """Replace the two generated README coverage regions."""
-    # A manually rendered below-threshold report must never receive a green badge.
-    # The normal Make and CI paths stop at pytest's fail-under gate before this case.
-    badge_color = "brightgreen" if metrics.passing else "red"
-    badge = (
-        "<!-- BEGIN PYTHON COVERAGE BADGE -->\n"
-        '  <a href="#python-quality-baseline">\n'
-        "    <img "
-        f'src="https://img.shields.io/badge/critical_path_coverage-{metrics.combined}%25_'
-        f'%7C_{metrics.branches}%25_branches-{badge_color}" '
-        f'alt="Critical path coverage: {metrics.combined}%, including '
-        f'{metrics.branches}% branch coverage" />\n'
-        "  </a>\n"
-        "  <!-- END PYTHON COVERAGE BADGE -->"
-    )
+    """Replace the generated README coverage table."""
     table = (
         "<!-- BEGIN PYTHON COVERAGE -->\n"
         "| Metric | Current | Required |\n"
@@ -110,12 +89,11 @@ def render_coverage_docs(readme: str, metrics: CoverageMetrics) -> str:
         f"| Classifier branch coverage | {metrics.classifier_branches}% | Reported |\n"
         "<!-- END PYTHON COVERAGE -->"
     )
-    rendered = _replace_one(_BADGE_PATTERN, readme, badge, name="coverage badge")
-    return _replace_one(_TABLE_PATTERN, rendered, table, name="coverage table")
+    return _replace_one(_TABLE_PATTERN, readme, table, name="coverage table")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Render the README or verify that its generated coverage regions are current."""
+    """Render the README or verify that its generated coverage table is current."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--coverage", type=Path, default=_ROOT / "quality-reports" / "coverage.json"

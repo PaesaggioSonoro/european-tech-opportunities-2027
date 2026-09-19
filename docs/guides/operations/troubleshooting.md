@@ -223,9 +223,9 @@ Container permissions are documented in [Docker](docker.md#volume-permissions).
 
 ### Coverage metrics are stale
 
-Python CI generates `quality-reports/coverage.json` from the current test run and then verifies that the committed README badge and table match it.
+Python CI generates `quality-reports/coverage.json` from the current test run and then verifies that the committed README coverage table matches it.
 
-Regenerate the report and both coverage regions from the repository root:
+Regenerate the report and coverage table from the repository root:
 
 ```bash
 make coverage
@@ -237,7 +237,7 @@ When Make is unavailable, run the complete coverage command documented in [Devel
 uv run python scripts/coverage_docs.py
 ```
 
-Use `uv run python scripts/coverage_docs.py --check` only after generating a current coverage report. Check mode verifies committed content without rewriting it. Never edit the coverage markers, badge, or table manually.
+Use `uv run python scripts/coverage_docs.py --check` only after generating a current coverage report. Check mode verifies committed content without rewriting it. Never edit the coverage markers or table manually.
 
 ## Collection failures
 

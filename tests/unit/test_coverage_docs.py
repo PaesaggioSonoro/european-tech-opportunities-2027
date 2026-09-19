@@ -44,7 +44,7 @@ def generated_inputs(tmp_path: Path) -> tuple[Path, Path, Path]:
     return coverage_path, pyproject_path, readme_path
 
 
-def test_renders_badge_and_table_and_then_passes_check(
+def test_renders_table_and_then_passes_check(
     generated_inputs: tuple[Path, Path, Path],
 ) -> None:
     coverage_path, pyproject_path, readme_path = generated_inputs
@@ -55,7 +55,7 @@ def test_renders_badge_and_table_and_then_passes_check(
 
     assert rendered.returncode == 0, rendered.stderr
     assert checked.returncode == 0, checked.stderr
-    assert "critical_path_coverage-90.1%25_%7C_82.7%25_branches-brightgreen" in content
+    assert "actions/workflows/codeql.yml/badge.svg" in content
     assert "| Combined statement and branch coverage | 90.1% | ≥ 85.0% |" in content
     assert "| Classifier branch coverage | 97.5% | Reported |" in content
 
@@ -68,21 +68,6 @@ def test_check_rejects_stale_metrics(generated_inputs: tuple[Path, Path, Path]) 
     assert result.returncode == 1
     assert "README coverage metrics are stale" in result.stderr
     assert readme_path.read_text(encoding="utf-8") == _readme_template()
-
-
-def test_below_threshold_report_uses_red_badge(
-    generated_inputs: tuple[Path, Path, Path],
-) -> None:
-    coverage_path, pyproject_path, readme_path = generated_inputs
-    report = json.loads(coverage_path.read_text(encoding="utf-8"))
-    report["totals"]["percent_covered"] = 84.94
-    report["totals"]["percent_covered_display"] = "84.9"
-    coverage_path.write_text(json.dumps(report), encoding="utf-8")
-
-    result = _run_script(coverage_path, pyproject_path, readme_path)
-
-    assert result.returncode == 0, result.stderr
-    assert "84.9%25_%7C_82.7%25_branches-red" in readme_path.read_text(encoding="utf-8")
 
 
 def test_invalid_report_fails_cleanly_without_rewriting_readme(
@@ -146,9 +131,7 @@ def _run_script(
 def _readme_template() -> str:
     return """# README
 
-<!-- BEGIN PYTHON COVERAGE BADGE -->
-old badge
-<!-- END PYTHON COVERAGE BADGE -->
+<img src="https://github.com/example/project/actions/workflows/codeql.yml/badge.svg" />
 
 <!-- BEGIN PYTHON COVERAGE -->
 old table

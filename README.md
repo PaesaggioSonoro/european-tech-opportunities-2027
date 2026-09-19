@@ -18,11 +18,9 @@
   <a href="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/site-ci.yml">
     <img src="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/site-ci.yml/badge.svg" alt="Site CI status" />
   </a>
-<!-- BEGIN PYTHON COVERAGE BADGE -->
-  <a href="#python-quality-baseline">
-    <img src="https://img.shields.io/badge/critical_path_coverage-90.1%25_%7C_82.7%25_branches-brightgreen" alt="Critical path coverage: 90.1%, including 82.7% branch coverage" />
+  <a href="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/codeql.yml">
+    <img src="https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/codeql.yml/badge.svg" alt="CodeQL security analysis status" />
   </a>
-  <!-- END PYTHON COVERAGE BADGE -->
   <a href="LICENSE">
     <img src="https://img.shields.io/github/license/simonesiega/european-tech-opportunities-2027" alt="MIT license" />
   </a>
@@ -112,7 +110,7 @@ Missing a relevant opportunity? [Suggest a listing](https://github.com/simonesie
 - **Python data pipeline:** bounded asynchronous collection, normalization, deterministic classification, and lifecycle processing.
 - **TypeScript web application:** server-rendered Next.js directory with search, filters, sorting, pagination, and shareable URLs.
 - **Canonical lifecycle state:** SQLite tracks provenance, first/last-seen timestamps, isolated search outcomes, conservative closure evidence, and daily availability checks.
-- **Production-grade validation:** strict typing, unit and integration tests, Playwright end-to-end tests, branch coverage gates, and parsing/classification benchmarks.
+- **Production-grade validation:** strict typing, unit and integration tests, Playwright end-to-end tests, branch coverage gates, CodeQL security analysis, and parsing/classification benchmarks.
 - **Automated operations:** Alembic migrations, scheduled collection, availability checks, sanitized public CSV/JSON exports, restore-verified backups, CI, and atomic deployment.
 
 ## How it works
@@ -169,11 +167,11 @@ The offline suite measures critical classification and lifecycle paths and enfor
 | Classifier branch coverage | 97.5% | Reported |
 <!-- END PYTHON COVERAGE -->
 
-The badge and table are generated from the same coverage report used by the quality gate. Run `make coverage` after changing Python behavior or tests.
+The table is generated from the same coverage report used by the quality gate. Run `make coverage` after changing Python behavior or tests.
 
 [Python CI](https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/python-ci.yml) verifies that committed metrics are current and publishes the complete statement, branch, and per-module coverage reports alongside parsing and classification benchmarks. Compare benchmark timings only across equivalent environments.
 
-[Site CI](https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/site-ci.yml) separately enforces formatting, linting, TypeScript type checking, a production build, unit tests, and Playwright end-to-end tests.
+[Site CI](https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/site-ci.yml) separately enforces formatting, linting, TypeScript type checking, a production build, unit tests, and Playwright end-to-end tests. [CodeQL](https://github.com/simonesiega/european-tech-opportunities-2027/actions/workflows/codeql.yml) scans the Python and TypeScript code on pushes, pull requests, and a weekly schedule.
 
 ## Run locally
 

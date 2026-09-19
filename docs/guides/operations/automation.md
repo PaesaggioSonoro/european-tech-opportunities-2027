@@ -29,6 +29,7 @@ Validation and collection remain separate: normal CI never contacts LinkedIn.
 |---|---|---|
 | `python-ci.yml` | Push to `main`, pull request, manual | Python formatting, linting, typing, thresholded combined statement-and-branch coverage, parsing/classification benchmarks, migrations, and generated-document checks |
 | `site-ci.yml` | Push to `main`, pull request, manual | Prettier, ESLint, strict TypeScript, the Next.js production build, unit tests, browser checks, and axe-core accessibility scans against synthetic SQLite state |
+| `codeql.yml` | Push to `main`, pull request, Monday 05:31 UTC, manual | CodeQL `security-extended` analysis for Python and TypeScript, with findings uploaded to GitHub code scanning |
 | `docker-ci.yml` | Push to `main`, pull request, manual | Action and Dockerfile linting, image builds and vulnerability scans, plus migrated read-only SQLite and production-header smoke tests |
 | `canonical-state-drill.yml` | Manual | Recover, validate, republish, and round-trip a canonical snapshot without source access |
 | `nightly.yml` | 04:23 UTC daily | Availability audit followed by scrape, with one narrowly scoped auto-merge pull request |
@@ -39,10 +40,11 @@ Workflow files under `.github/workflows/` are the executable source of truth. Up
 
 ## Validation workflows
 
-The three validation workflows require no LinkedIn access:
+The four validation workflows require no LinkedIn access:
 
 - **Python CI** validates the pipeline, CLI, migrations, lifecycle behavior, README projection, and documentation contracts; it publishes critical-path coverage and benchmark reports for 30 days. Current measured values are summarized in the root [Python quality baseline](../../../README.md#python-quality-baseline).
 - **Site CI** uses the documented Node.js and Bun versions to validate formatting, linting, strict TypeScript, the production Next.js build, unit tests, Playwright behavior, and axe-core accessibility checks against synthetic SQLite state.
+- **CodeQL** runs GitHub's extended security query suite independently for Python and TypeScript on pushes, pull requests, manual runs, and every Monday at 05:31 UTC. It uses interpreted-language no-build extraction and uploads results only to GitHub code scanning.
 - **Docker CI** runs `actionlint` and Hadolint, builds both production targets, uses Trivy to reject high or critical vulnerabilities for which a fix is available, and verifies migration, read-only website access, public-export delivery, Content Security Policy, and HTTP Strict Transport Security. Unfixed findings are excluded from this actionable-finding gate.
 
 Validation jobs have explicit timeouts and checkout without persisted Git credentials. Third-party actions and CI tool images are pinned to immutable revisions where practical and should remain pinned. Runtime and package-manager versions should stay explicit rather than being resolved through latest-release APIs.
