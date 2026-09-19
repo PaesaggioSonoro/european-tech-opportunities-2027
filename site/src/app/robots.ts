@@ -1,11 +1,10 @@
 import type {MetadataRoute} from "next";
-
-const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
+import {siteUrl} from "@/lib/site-url";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {userAgent: "*", allow: "/"},
     sitemap: new URL("/sitemap.xml", siteUrl).toString(),
-    host: new URL(siteUrl).origin,
+    host: siteUrl.origin,
   };
 }

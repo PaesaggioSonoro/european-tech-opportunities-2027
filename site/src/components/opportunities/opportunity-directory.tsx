@@ -4,8 +4,9 @@ import {useEffect, useRef, useSyncExternalStore} from "react";
 import {Download} from "lucide-react";
 import {OpportunityFilters} from "@/components/opportunities/opportunity-filters";
 import {OpportunityList} from "@/components/opportunities/opportunity-list";
-import {useOpportunityFilters} from "@/components/opportunities/use-opportunity-filters";
+import {useOpportunityDirectory} from "@/components/opportunities/use-opportunity-directory";
 import {Badge} from "@/components/ui/badge";
+import {siteConfig} from "@/lib/site-config";
 import type {Opportunity} from "@/types/opportunity";
 
 type OpportunityDirectoryProps = {
@@ -23,8 +24,16 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
     getClientHydrationState,
     getServerHydrationState
   );
-  const {filters, setters, options, filteredOpportunities, hasActiveFilters, clearFilters} =
-    useOpportunityFilters(opportunities);
+  const {
+    filters,
+    filterSetters,
+    view,
+    viewSetters,
+    options,
+    filteredOpportunities,
+    hasActiveFilters,
+    clearFilters,
+  } = useOpportunityDirectory(opportunities);
 
   useEffect(() => {
     function focusSearch(event: KeyboardEvent) {
@@ -53,7 +62,7 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
             Opportunity directory
           </h1>
           <p className="mt-[7px] text-sm text-[var(--text-soft)] max-[600px]:max-w-[300px] max-[600px]:text-[13px] max-[600px]:leading-normal">
-            Discover open 2027 technology internships and New Grad roles across Europe.
+            {siteConfig.description}
           </p>
         </div>
         <div className="flex items-center gap-2 max-[760px]:w-full max-[480px]:flex-wrap">
@@ -69,9 +78,10 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
             </a>
           ))}
           <Badge
-            className="directory-count min-h-8 gap-1.5 rounded-md px-2.5 py-0 max-[760px]:ml-auto"
+            className="min-h-8 gap-1.5 rounded-md px-2.5 py-0 max-[760px]:ml-auto"
             variant="outline"
-            aria-live="polite"
+            role="status"
+            aria-atomic="true"
           >
             <strong className="text-base font-bold tracking-[-0.03em] text-[var(--text)]">
               {filteredOpportunities.length}
@@ -88,16 +98,20 @@ export function OpportunityDirectory({opportunities}: OpportunityDirectoryProps)
         filters={filters}
         options={options}
         hasActiveFilters={hasActiveFilters}
-        onQueryChange={setters.setQuery}
-        onCompanyChange={setters.setCompany}
-        onLocationChange={setters.setLocation}
-        onCategoryChange={setters.setCategory}
-        onEmploymentTypeChange={setters.setEmploymentType}
+        onQueryChange={filterSetters.setQuery}
+        onCompanyChange={filterSetters.setCompany}
+        onLocationChange={filterSetters.setLocation}
+        onCategoryChange={filterSetters.setCategory}
+        onEmploymentTypeChange={filterSetters.setEmploymentType}
         onClear={clearFilters}
       />
       <OpportunityList
         opportunities={filteredOpportunities}
+        view={view}
         hasActiveFilters={hasActiveFilters}
+        onSortChange={viewSetters.setSort}
+        onPageChange={viewSetters.setPage}
+        onPageSizeChange={viewSetters.setPageSize}
         onReset={clearFilters}
       />
     </section>

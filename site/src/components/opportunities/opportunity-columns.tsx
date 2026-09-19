@@ -30,17 +30,18 @@ function SortableHeader({column, label}: {column: Column<Opportunity>; label: st
 export const opportunityColumns: ColumnDef<Opportunity>[] = [
   {
     id: "open",
+    header: () => <span className="sr-only">Listing</span>,
     enableSorting: false,
     cell: ({row}) => (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="w-7 [&_svg]:size-4"
-        onClick={() => window.open(row.original.link, "_blank", "noopener,noreferrer")}
+      <a
+        className="inline-flex size-8 w-7 items-center justify-center rounded-md text-[var(--text-soft)] transition-colors duration-150 hover:bg-[var(--surface-hover)] hover:text-[var(--text)] [&_svg]:size-4"
+        href={row.original.link}
+        target="_blank"
+        rel="noreferrer"
         aria-label={`Open ${row.original.title} at ${row.original.company}`}
       >
         <ArrowUpRight aria-hidden="true" />
-      </Button>
+      </a>
     ),
   },
   {

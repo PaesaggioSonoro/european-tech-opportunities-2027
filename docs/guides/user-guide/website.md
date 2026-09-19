@@ -12,7 +12,7 @@ This is the canonical website guide for the project. The [live website](https://
 - [Public data downloads](#public-data-downloads)
 - [Data interpretation](#data-interpretation)
 - [Accessibility and responsive behavior](#accessibility-and-responsive-behavior)
-- [Shareable filter URLs](#shareable-filter-urls)
+- [Shareable directory URLs](#shareable-directory-urls)
 - [Search and social metadata](#search-and-social-metadata)
 - [Read-only database contract](#read-only-database-contract)
 - [Local website development](#local-website-development)
@@ -44,7 +44,7 @@ The directory provides:
 - light and dark themes stored as browser preferences;
 - direct links to public source listings;
 - downloadable sanitized CSV and JSON datasets;
-- shareable filter URLs;
+- shareable directory URLs covering filters, sorting, page size, and pagination;
 - a live result count, equal to the total open-opportunity count when no filters are active;
 - the latest successful collection time.
 
@@ -77,7 +77,7 @@ Sortable columns include:
 
 Search, filtering, sorting, page size, and pagination affect only the displayed result set. The table defaults to newest first with 10 rows per page and offers 10, 20, 30, 50, or 100 rows per page. None of this presentation state mutates canonical state or influences collection.
 
-Search and filter state is encoded in the URL so a filtered view can be bookmarked or shared. Sorting, page size, and pagination remain local component state and are intentionally excluded from the URL.
+The complete directory view is encoded in the URL so its filters, sorting, page size, and current page can be bookmarked or shared. Default values are omitted to keep canonical URLs concise.
 
 A browser interaction or URL state is not lifecycle evidence, collection input, or a pipeline instruction.
 
@@ -148,7 +148,9 @@ Website changes should preserve:
 
 The empty directory is a valid state when the configured database contains no open listings.
 
-## Shareable filter URLs
+Playwright runs axe-core WCAG 2.0, 2.1, and 2.2 A/AA checks against the normal directory, a filtered view, an empty-result view, and dark mode. These automated checks complement rather than replace keyboard and assistive-technology review.
+
+## Shareable directory URLs
 
 The directory recognizes these query parameters:
 
@@ -159,16 +161,19 @@ The directory recognizes these query parameters:
 | `country` | Exact country option |
 | `category` | Exact internal technology category |
 | `type` | Exact normalized employment type: `internship` or `new-grad` |
+| `sort` | Sort field and direction, such as `first-seen-desc`, `company-asc`, `role-desc`, or `location-asc` |
+| `page-size` | Rows per page: `10`, `20`, `30`, `50`, or `100` |
+| `page` | One-based result page |
 
 For example:
 
 ```text
-https://opportunities2027.simonesiega.com/?q=security&country=Germany
+https://opportunities2027.simonesiega.com/?country=Germany&type=internship&sort=first-seen-desc&page=2
 ```
 
-Selecting a filter adds it to browser history, clearing a filter removes its parameter, and browser back/forward navigation restores earlier filter selections. Search typing replaces the current history entry to avoid creating one entry per keystroke. Reset removes only directory-owned parameters.
+Selecting a filter, sorting a column, changing page size, or moving between pages updates browser history, and browser back/forward navigation restores the complete earlier view. Search typing replaces the current history entry to avoid creating one entry per keystroke. Changing filters, sorting, or page size returns the view to page one. Reset removes the filter parameters and current page while preserving sorting, page size, and unrelated parameters.
 
-A company, country, category, or employment-type value that is not present in the current open dataset is ignored. Query parameters are untrusted presentation input and never reach a database write path.
+Unsupported filter, sort, page-size, and page values are ignored or safely constrained. Query parameters are untrusted presentation input and never reach a database write path.
 
 ## Search and social metadata
 
@@ -178,9 +183,12 @@ The website publishes:
 - descriptive title, description, authorship, and crawler directives;
 - Open Graph and large-card social metadata;
 - a generated 1200 × 630 social preview image;
-- `/robots.txt`, `/sitemap.xml`, and `/manifest.webmanifest` metadata routes.
+- `/robots.txt`, `/sitemap.xml`, and `/manifest.webmanifest` metadata routes;
+- schema.org JSON-LD describing the directory as a `WebSite` and the downloadable collection as a `Dataset`, including its Europe coverage, 2027 cycle, MIT license, maintainer, daily update schedule, latest successful collection time, and CSV/JSON distributions.
 
-`SITE_URL` must contain the canonical public origin so absolute metadata, sitemap, and crawler URLs are correct in production.
+The structured data describes the directory-level dataset only. It does not emit `JobPosting` records for individual source listings because the directory does not own or expose every field required for compliant job-posting markup.
+
+`SITE_URL` must contain the canonical public origin so absolute metadata, sitemap, structured-data download, and crawler URLs are correct in production.
 
 ## Read-only database contract
 
@@ -226,7 +234,7 @@ bunx playwright install chromium
 bun run ci
 ```
 
-`bun run ci` checks formatting, lint, strict TypeScript, the production build, Bun unit tests, and Playwright browser behavior against a generated temporary SQLite fixture. It does not contact LinkedIn.
+`bun run ci` checks formatting, lint, strict TypeScript, the production build, Bun unit tests, Playwright browser behavior, and axe-core accessibility scans against a generated temporary SQLite fixture. It does not contact LinkedIn.
 
 The complete validation path and coding expectations are documented in [Development](../development/development.md#website-validation).
 

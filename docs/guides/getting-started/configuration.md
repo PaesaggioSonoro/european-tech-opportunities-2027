@@ -249,7 +249,7 @@ The Next.js website uses three runtime or build variables:
 |---|---|---|
 | `OPPORTUNITIES_DATABASE_PATH` | `../data/opportunities.db` | Read-only SQLite file used by server requests |
 | `OPPORTUNITIES_PUBLIC_EXPORT_DIR` | `../data/exports` | Read-only directory containing pipeline-generated CSV and JSON downloads |
-| `SITE_URL` | `http://localhost:3000` | Canonical public origin used by metadata |
+| `SITE_URL` | `http://localhost:3000` | HTTP(S) canonical origin used by metadata, structured data, robots, and the sitemap; credentials, paths, queries, and fragments are rejected |
 
 Create the local website environment file:
 

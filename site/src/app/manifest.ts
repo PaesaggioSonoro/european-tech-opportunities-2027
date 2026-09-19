@@ -1,14 +1,15 @@
 import type {MetadataRoute} from "next";
+import {siteConfig} from "@/lib/site-config";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
     scope: "/",
     start_url: "/",
-    name: "European Tech Opportunities 2027",
-    short_name: "Opportunities ’27",
-    description: "Open European technology internships and New Grad roles for 2027.",
-    lang: "en-GB",
+    name: siteConfig.name,
+    short_name: siteConfig.shortName,
+    description: siteConfig.description,
+    lang: siteConfig.language,
     dir: "ltr",
     display: "standalone",
     background_color: "#f9fafb",

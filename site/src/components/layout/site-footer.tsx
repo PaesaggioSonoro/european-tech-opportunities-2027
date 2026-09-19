@@ -1,5 +1,6 @@
 import {formatPublishedDate} from "@/lib/opportunity-presentation";
 import {addPositionUrl, newIssueUrl, repositoryUrl} from "@/lib/project-links";
+import {siteConfig} from "@/lib/site-config";
 
 type SiteFooterProps = {
   lastUpdatedAt: string | null;
@@ -9,8 +10,8 @@ export function SiteFooter({lastUpdatedAt}: SiteFooterProps) {
   return (
     <footer className="flex min-h-16 items-center justify-between gap-8 border-t border-[var(--border)] py-3 text-[13px] leading-[1.45] text-[var(--text-faint)] max-[680px]:flex-col max-[680px]:items-start max-[680px]:gap-3 max-[680px]:py-[18px]">
       <div className="flex flex-col gap-0.5">
-        <strong className="font-semibold text-[var(--text)]">Opportunities ’27</strong>
-        <span>Discover open 2027 tech internships and New Grad roles across Europe.</span>
+        <strong className="font-semibold text-[var(--text)]">{siteConfig.shortName}</strong>
+        <span>{siteConfig.description}</span>
       </div>
 
       <div className="flex flex-col items-end gap-0.5 text-right max-[680px]:items-start max-[680px]:text-left">

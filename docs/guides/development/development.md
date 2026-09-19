@@ -149,7 +149,7 @@ cd site
 bun run ci
 ```
 
-This verifies Prettier, ESLint, strict TypeScript, the production Next.js build, Bun unit tests, and Playwright browser behavior in Chromium against a temporary synthetic SQLite fixture under `site/tests/e2e/.tmp/`. The fixture and test artifacts are ignored by Git.
+This verifies Prettier, ESLint, strict TypeScript, the production Next.js build, Bun unit tests, and Playwright browser behavior in Chromium against a temporary synthetic SQLite fixture under `site/tests/e2e/.tmp/`. Playwright also runs axe-core WCAG 2.0, 2.1, and 2.2 A/AA scans for the normal, filtered, empty-result, and dark-mode directory states. The fixture and test artifacts are ignored by Git.
 
 Run a focused browser test with:
 

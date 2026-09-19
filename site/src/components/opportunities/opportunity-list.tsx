@@ -1,6 +1,5 @@
 "use client";
 
-import {useState} from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -14,33 +13,67 @@ import {opportunityColumns} from "@/components/opportunities/opportunity-columns
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {cn} from "@/lib/cn";
+import {
+  DIRECTORY_PAGE_SIZES,
+  type DirectoryPageSize,
+  type DirectorySort,
+  type DirectoryView,
+} from "@/types/directory";
 import type {Opportunity} from "@/types/opportunity";
+
+const SORTING_BY_DIRECTORY_SORT: Record<DirectorySort, SortingState[number]> = {
+  "company-asc": {id: "company", desc: false},
+  "company-desc": {id: "company", desc: true},
+  "role-asc": {id: "title", desc: false},
+  "role-desc": {id: "title", desc: true},
+  "location-asc": {id: "location", desc: false},
+  "location-desc": {id: "location", desc: true},
+  "first-seen-asc": {id: "firstSeenAt", desc: false},
+  "first-seen-desc": {id: "firstSeenAt", desc: true},
+};
 
 type OpportunityListProps = {
   opportunities: Opportunity[];
+  view: DirectoryView;
   hasActiveFilters: boolean;
+  onSortChange: (sort: DirectorySort) => void;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: DirectoryPageSize) => void;
   onReset: () => void;
 };
 
-export function OpportunityList({opportunities, hasActiveFilters, onReset}: OpportunityListProps) {
-  const [sorting, setSorting] = useState<SortingState>([{id: "firstSeenAt", desc: true}]);
+export function OpportunityList({
+  opportunities,
+  view,
+  hasActiveFilters,
+  onSortChange,
+  onPageChange,
+  onPageSizeChange,
+  onReset,
+}: OpportunityListProps) {
+  const sorting: SortingState = [SORTING_BY_DIRECTORY_SORT[view.sort]];
+  const pagination = {pageIndex: view.page - 1, pageSize: view.pageSize};
+
   // TanStack Table intentionally returns non-memoizable functions as part of its API.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: opportunities,
     columns: opportunityColumns,
-    state: {sorting},
-    onSortingChange: setSorting,
+    state: {sorting, pagination},
+    onSortingChange: (updater) => {
+      const nextSorting = typeof updater === "function" ? updater(sorting) : updater;
+      onSortChange(toDirectorySort(nextSorting));
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: {pagination: {pageIndex: 0, pageSize: 10}},
+    autoResetPageIndex: false,
   });
 
   return (
     <div className="mt-4">
       <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[0_1px_2px_rgb(0_0_0/3%)]">
-        <Table>
+        <Table aria-label="Open opportunities">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -137,11 +170,16 @@ export function OpportunityList({opportunities, hasActiveFilters, onReset}: Oppo
           <span className="relative">
             <select
               className="h-[34px] w-[66px] cursor-pointer appearance-none rounded-md border border-[var(--border)] bg-[var(--surface)] py-0 pr-[30px] pl-2.5 text-xs text-[var(--text)] shadow-[0_1px_2px_rgb(0_0_0/3%)] outline-none focus:border-[var(--text-faint)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--text)_9%,transparent)]"
-              value={table.getState().pagination.pageSize}
-              onChange={(event) => table.setPageSize(Number(event.target.value))}
+              value={view.pageSize}
+              onChange={(event) => {
+                const pageSize = DIRECTORY_PAGE_SIZES.find(
+                  (option) => option === Number(event.target.value)
+                );
+                if (pageSize) onPageSizeChange(pageSize);
+              }}
               aria-label="Rows per page"
             >
-              {[10, 20, 30, 50, 100].map((pageSize) => (
+              {DIRECTORY_PAGE_SIZES.map((pageSize) => (
                 <option key={pageSize} value={pageSize}>
                   {pageSize}
                 </option>
@@ -155,12 +193,12 @@ export function OpportunityList({opportunities, hasActiveFilters, onReset}: Oppo
         </label>
         <div className="flex items-center gap-2">
           <span className="mr-1.5">
-            Page {table.getState().pagination.pageIndex + 1} of {Math.max(table.getPageCount(), 1)}
+            Page {view.page} of {Math.max(table.getPageCount(), 1)}
           </span>
           <Button
             variant="outline"
             size="icon"
-            onClick={() => table.previousPage()}
+            onClick={() => onPageChange(view.page - 1)}
             disabled={!table.getCanPreviousPage()}
             aria-label="Previous page"
           >
@@ -169,7 +207,7 @@ export function OpportunityList({opportunities, hasActiveFilters, onReset}: Oppo
           <Button
             variant="outline"
             size="icon"
-            onClick={() => table.nextPage()}
+            onClick={() => onPageChange(view.page + 1)}
             disabled={!table.getCanNextPage()}
             aria-label="Next page"
           >
@@ -179,4 +217,22 @@ export function OpportunityList({opportunities, hasActiveFilters, onReset}: Oppo
       </div>
     </div>
   );
+}
+
+function toDirectorySort(sorting: SortingState): DirectorySort {
+  const primarySort = sorting[0];
+  if (!primarySort) return "first-seen-desc";
+
+  switch (primarySort.id) {
+    case "company":
+      return primarySort.desc ? "company-desc" : "company-asc";
+    case "title":
+      return primarySort.desc ? "role-desc" : "role-asc";
+    case "location":
+      return primarySort.desc ? "location-desc" : "location-asc";
+    case "firstSeenAt":
+      return primarySort.desc ? "first-seen-desc" : "first-seen-asc";
+    default:
+      return "first-seen-desc";
+  }
 }

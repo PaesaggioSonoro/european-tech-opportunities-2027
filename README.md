@@ -38,6 +38,8 @@
 <!-- END OPPORTUNITY COUNTS -->
 
 <p align="center">
+  <a href="https://opportunities2027.simonesiega.com/open-opportunities.csv"><strong>Download CSV</strong></a> ·
+  <a href="https://opportunities2027.simonesiega.com/open-opportunities.json"><strong>Download JSON</strong></a> ·
   <a href="https://opportunities2027.simonesiega.com/"><strong>Explore the live directory →</strong></a>
 </p>
 
@@ -56,7 +58,7 @@
   />
 </p>
 
-The public directory has surpassed **1,000 unique visitors across 50+ countries since launch**. Search hundreds of validated opportunities by company, country, category, and employment type, with sortable results, pagination, shareable filters, direct links to the original listings, and sanitized [CSV](https://opportunities2027.simonesiega.com/open-opportunities.csv) and [JSON](https://opportunities2027.simonesiega.com/open-opportunities.json) downloads.
+The public directory has surpassed **1,000 unique visitors across 50+ countries since launch**. Search hundreds of validated opportunities by company, country, category, and employment type, with sortable results, pagination, shareable directory views, direct links to the original listings, and sanitized [CSV](https://opportunities2027.simonesiega.com/open-opportunities.csv) and [JSON](https://opportunities2027.simonesiega.com/open-opportunities.json) downloads.
 
 ## Why this exists
 

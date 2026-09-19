@@ -79,6 +79,7 @@ export function OpportunityFilters({
   return (
     <div
       className="mt-7 grid grid-cols-[minmax(260px,1.5fr)_repeat(4,minmax(130px,0.7fr))_auto] gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_1px_2px_rgb(0_0_0/3%)] max-[1040px]:grid-cols-3 max-[620px]:grid-cols-1 max-[620px]:p-3.5"
+      role="search"
       aria-label="Opportunity filters"
     >
       <label

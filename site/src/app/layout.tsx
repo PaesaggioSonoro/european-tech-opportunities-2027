@@ -1,38 +1,35 @@
 import type {Metadata} from "next";
 import {ThemeProvider} from "next-themes";
 import type {ReactNode} from "react";
+import {siteConfig} from "@/lib/site-config";
+import {siteUrl} from "@/lib/site-url";
 import "./globals.css";
 
-const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
-const analyticsDomain = "opportunities2027.simonesiega.com";
 const analyticsEnabled =
-  process.env.NODE_ENV === "production" && new URL(siteUrl).hostname === analyticsDomain;
-const title = "European Tech Opportunities 2027";
-const description =
-  "Search and filter 2027 technology internships and New Grad positions across Europe.";
+  process.env.NODE_ENV === "production" && siteUrl.hostname === siteConfig.analyticsDomain;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {default: title, template: `%s | ${title}`},
-  description,
-  applicationName: title,
-  authors: [{name: "Simone Siega", url: "https://simonesiega.com"}],
-  creator: "Simone Siega",
-  publisher: "Simone Siega",
+  metadataBase: siteUrl,
+  title: {default: siteConfig.name, template: `%s | ${siteConfig.name}`},
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  authors: [{name: siteConfig.maintainer.name, url: siteConfig.maintainer.url}],
+  creator: siteConfig.maintainer.name,
+  publisher: siteConfig.maintainer.name,
   alternates: {canonical: "/"},
   openGraph: {
     type: "website",
-    locale: "en_GB",
+    locale: siteConfig.openGraphLocale,
     url: "/",
-    siteName: title,
-    title,
-    description,
-    images: [{url: "/opengraph-image", width: 1200, height: 630, alt: title}],
+    siteName: siteConfig.name,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [{url: "/opengraph-image", width: 1200, height: 630, alt: siteConfig.name}],
   },
   twitter: {
     card: "summary_large_image",
-    title,
-    description,
+    title: siteConfig.name,
+    description: siteConfig.description,
     images: ["/opengraph-image"],
   },
   robots: {index: true, follow: true},
@@ -40,13 +37,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: Readonly<{children: ReactNode}>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={siteConfig.language} suppressHydrationWarning>
       <head>
         {analyticsEnabled ? (
           <script
             defer
             src="https://cloud.umami.is/script.js"
-            data-domains={analyticsDomain}
+            data-domains={siteConfig.analyticsDomain}
             data-website-id="e3733fba-21a0-4663-9e54-9e6adab3e0d5"
           />
         ) : null}

@@ -3,17 +3,26 @@ import {renderToStaticMarkup} from "react-dom/server";
 import {OpportunityList} from "@/components/opportunities/opportunity-list";
 
 const noOp = () => undefined;
+const view = {sort: "first-seen-desc", page: 1, pageSize: 10} as const;
+const commonProps = {
+  opportunities: [],
+  view,
+  onSortChange: noOp,
+  onPageChange: noOp,
+  onPageSizeChange: noOp,
+  onReset: noOp,
+};
 
 test("renders an actionable message only when filters hide every opportunity", () => {
   const emptyDirectory = renderToStaticMarkup(
-    <OpportunityList opportunities={[]} hasActiveFilters={false} onReset={noOp} />
+    <OpportunityList {...commonProps} hasActiveFilters={false} />
   );
   expect(emptyDirectory).toContain("No open opportunities");
   expect(emptyDirectory).toContain("The directory currently has no open roles.");
   expect(emptyDirectory).not.toContain("Reset filters");
 
   const emptyFilterResult = renderToStaticMarkup(
-    <OpportunityList opportunities={[]} hasActiveFilters onReset={noOp} />
+    <OpportunityList {...commonProps} hasActiveFilters />
   );
   expect(emptyFilterResult).toContain("No opportunities found");
   expect(emptyFilterResult).toContain("Try changing or clearing your filters.");
