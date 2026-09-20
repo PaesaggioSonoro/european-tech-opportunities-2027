@@ -3,10 +3,10 @@ import type {NextConfig} from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-const contentSecurityPolicy = [
+export const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
-  "connect-src 'self' https://cloud.umami.is",
+  "connect-src 'self' https://gateway.umami.is",
   "font-src 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",

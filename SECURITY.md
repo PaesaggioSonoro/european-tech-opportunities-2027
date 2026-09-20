@@ -139,7 +139,7 @@ For dependencies and releases:
 - protect deployment keys, artifacts, caches, snapshots, backups, and package credentials with least privilege;
 - keep VPS secrets only in main-restricted `canonical-state` and `production` GitHub environments, delete repository-level copies, and remove this repository's access to equivalent organization secrets;
 - keep canonical processing read-only to GitHub, isolate repository mutation in scoped jobs, and never place VPS credentials or canonical SQLite state in pull-request jobs, Actions cache, or artifacts;
-- grant the README mutation job `actions: write` only so it can dispatch validation on its generated commit, and require exact README-only pull-request scope before that dispatch.
+- grant the README mutation job `actions: write` only so it can dispatch and await validation on its generated commit, and require exact README-only pull-request scope before that dispatch.
 
 ## Responsible disclosure
 

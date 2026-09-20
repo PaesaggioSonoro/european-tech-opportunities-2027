@@ -37,7 +37,7 @@ permissions:
 jobs:
   propose:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 75
     steps:
       # Defense in depth: repository mutation is valid only for a main-branch caller.
       - name: Require the default branch for repository mutation
@@ -126,7 +126,7 @@ jobs:
           fi
 
           # GitHub suppresses normal workflow recursion for GITHUB_TOKEN pushes. Dispatch the
-          # complete validation suite explicitly so required checks attach to this head SHA.
+          # complete validation suite explicitly so checks attach to this head SHA.
           safe_scope=false
           for attempt in 1 2 3 4 5; do
             safe_scope=$(gh pr view "$pr_number" \
@@ -143,8 +143,42 @@ jobs:
             exit 1
           fi
 
-          for validation_workflow in python-ci.yml site-ci.yml docker-ci.yml codeql.yml; do
+          validation_workflows=(python-ci.yml site-ci.yml docker-ci.yml codeql.yml)
+          validation_started_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          head_sha=$(git rev-parse HEAD)
+          for validation_workflow in "${validation_workflows[@]}"; do
             gh workflow run "$validation_workflow" --ref "$UPDATE_BRANCH"
+          done
+
+          # Keep the automation branch alive until every explicitly dispatched run completes.
+          # Without this wait, an unprotected repository can merge and delete the branch before
+          # GitHub creates any jobs, leaving an immediate startup failure with no logs.
+          validation_run_ids=()
+          for validation_workflow in "${validation_workflows[@]}"; do
+            run_id=""
+            for attempt in $(seq 1 30); do
+              run_id=$(gh run list \
+                --workflow "$validation_workflow" \
+                --branch "$UPDATE_BRANCH" \
+                --event workflow_dispatch \
+                --limit 20 \
+                --json databaseId,createdAt,headSha \
+                --jq "map(select(.headSha == \"$head_sha\" and .createdAt >= \"$validation_started_at\")) | sort_by(.createdAt) | last | .databaseId // empty")
+              if [ -n "$run_id" ]; then
+                break
+              fi
+              sleep "$((attempt * 2))"
+            done
+            if [ -z "$run_id" ]; then
+              echo "Could not identify the $validation_workflow validation run for $head_sha."
+              exit 1
+            fi
+            validation_run_ids+=("$run_id")
+          done
+
+          for index in "${!validation_workflows[@]}"; do
+            echo "Waiting for ${validation_workflows[$index]} run ${validation_run_ids[$index]}."
+            gh run watch "${validation_run_ids[$index]}" --compact --exit-status
           done
 
           if [ "$UPDATE_AUTO_MERGE" = "true" ]; then

@@ -290,7 +290,7 @@ Workflow orchestration belongs to [Automation](../operations/automation.md), and
 
 ## Privacy and browser integrations
 
-The canonical production layout loads the hosted Umami analytics script from `https://cloud.umami.is/script.js` and restricts collection to `opportunities2027.simonesiega.com`. The script is rendered only when `NODE_ENV` is `production` and the configured `SITE_URL` hostname is that canonical domain, so it is absent from development, tests, and noncanonical deployments. This third-party browser integration must remain within privacy and security review.
+The canonical production layout loads the hosted Umami analytics script from `https://cloud.umami.is/script.js`, sends analytics events to `https://gateway.umami.is`, and restricts collection to `opportunities2027.simonesiega.com`. The production Content Security Policy permits only those distinct script and connection origins. The script is rendered only when `NODE_ENV` is `production` and the configured `SITE_URL` hostname is that canonical domain, so it is absent from development, tests, and noncanonical deployments. This third-party browser integration must remain within privacy and security review.
 
 The directory itself requires no:
 

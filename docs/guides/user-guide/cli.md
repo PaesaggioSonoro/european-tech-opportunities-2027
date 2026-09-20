@@ -180,7 +180,7 @@ The command requires the LinkedIn authorization interlock and checks every job r
 - a scoped public-page “No longer accepting applications” alert also permanently deletes the job;
 - authentication failures, rate limits, server errors, malformed responses, and transport failures preserve the row as inconclusive.
 
-The command exits with code `2` when one or more checks are inconclusive. Confirmed results remain committed, and the default path refreshes the owned README, registry documentation, and public CSV/JSON projections. The nightly workflow runs this full audit once per day before scraping, opens or updates a tightly scoped README pull request, explicitly dispatches validation on that generated commit, and requests auto-merge through configured required checks. The availability-only workflow can run the same command manually and opens its own validated manual-review pull request.
+The command exits with code `2` when one or more checks are inconclusive. Confirmed results remain committed, and the default path refreshes the owned README, registry documentation, and public CSV/JSON projections. The nightly workflow runs this full audit once per day before scraping, opens or updates a tightly scoped README pull request, explicitly dispatches and awaits validation on that generated commit, and only then requests auto-merge. The availability-only workflow can run the same command manually and opens its own validated manual-review pull request.
 
 ## `render`
 

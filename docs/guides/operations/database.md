@@ -194,7 +194,7 @@ anything else                                          → preserve the job as i
 
 The auditor collects every outcome before applying confirmed changes in one transaction. Rate limits, authentication failures, redirects, server errors, invalid content, and transport failures never become deletion evidence. Search and run history remain available after a job deletion.
 
-The README is regenerated after the transaction. The nightly workflow includes the audit result in its combined, README-only pull request, explicitly dispatches required validation on that generated commit, and requests auto-merge only after the exact-scope check. A manual availability-only run uses a separate validated, manual-review pull request. SQLite itself remains canonical runtime state and is not committed to Git.
+The README is regenerated after the transaction. The nightly workflow includes the audit result in its combined, README-only pull request, explicitly dispatches and awaits validation on that generated commit, and requests auto-merge only after the exact-scope check and successful runs. A manual availability-only run uses a separate validated, manual-review pull request. SQLite itself remains canonical runtime state and is not committed to Git.
 
 ## Timestamp invariants
 

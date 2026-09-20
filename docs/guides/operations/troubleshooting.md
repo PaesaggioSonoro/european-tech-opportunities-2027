@@ -517,11 +517,12 @@ Confirm that:
 - its head branch is `automated/nightly-full-update`;
 - its title is `data: nightly availability and scrape update`;
 - `README.md` is the only changed file;
-- manual `workflow_dispatch` runs exist for all four validation workflows on the automation branch head SHA.
+- `workflow_dispatch` runs exist for all four validation workflows on the automation branch head SHA;
+- the README mutation job identified those run IDs and waited for each successful conclusion before requesting auto-merge.
 
-A branch push made by `GITHUB_TOKEN` does not trigger ordinary push or pull-request recursion. The README mutation workflow compensates by explicitly dispatching all four validation workflows after its exact-scope check. If those runs are missing, inspect that job for workflow-dispatch permission or policy failures; do not bypass required checks.
+A branch push made by `GITHUB_TOKEN` does not reliably trigger ordinary push or pull-request recursion. The README mutation workflow compensates by explicitly dispatching all four validation workflows after its exact-scope check, then keeping the branch alive until they finish. If those runs are missing, inspect that job for workflow-dispatch permission or policy failures; do not bypass required checks.
 
-The workflow refuses validation dispatch and auto-merge when any scope check differs. Do not weaken that check to merge unrelated changes; restore the fixed automation branch to the expected README-only diff instead.
+A validation run that fails instantly with zero jobs and no logs usually means the automation branch was merged and deleted before GitHub finished creating jobs. The explicit dispatch wait prevents that race without weakening validation. The workflow also refuses validation dispatch and auto-merge when any scope check differs. Do not weaken either safeguard; restore the fixed automation branch to the expected README-only diff instead.
 
 ## Docker failures
 
