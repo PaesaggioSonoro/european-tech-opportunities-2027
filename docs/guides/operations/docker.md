@@ -228,7 +228,7 @@ OPPORTUNITIES_PUBLIC_EXPORT_DIR=/app/data/exports
 
 The site service must receive the host state directory as a read-only bind mount.
 
-The manual deployment mode in `scrape.yml` replaces the SQLite file and sanitized CSV/JSON exports in that host directory through verified SSH, checksum comparison, locking, restricted permissions, and atomic rename.
+The manual deployment mode in `scrape.yml` replaces the SQLite file and sanitized CSV/JSON exports in that host directory through the main-only `production` GitHub environment, verified SSH, checksum comparison, locking, restricted permissions, and atomic rename.
 
 The website opens a new short-lived read-only connection for each server request, so deployed state becomes visible without:
 
@@ -329,7 +329,7 @@ deploy the reviewed state and public exports
 </pre>
 </div>
 
-Normal automation keeps collection and deployment separate: newly collected state is proposed through a README pull request, while deployment-only mode restores and validates the reviewed durable state from `main` before replacing the production database.
+Normal automation keeps collection and deployment separate: newly collected state is proposed through a README pull request and validated on its generated commit, while deployment-only mode restores and validates the reviewed durable state from `main` before entering the protected `production` environment and replacing the production database.
 
 After changing Dockerfile or Compose behavior, run:
 

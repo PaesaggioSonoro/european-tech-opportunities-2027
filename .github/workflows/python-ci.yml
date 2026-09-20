@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Keep only the newest validation for a ref; required checks apply to the latest SHA.
+concurrency:
+  group: validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -17,13 +22,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - uses: ./.github/actions/setup-python
         with:
-          version: "0.11.6"
-          python-version: "3.12"
-          enable-cache: true
-      - name: Install frozen dependencies
-        run: uv sync --frozen --dev
+          dev-dependencies: "true"
       - name: Check formatting
         run: uv run ruff format --check .
       - name: Lint Python
@@ -36,13 +37,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - uses: ./.github/actions/setup-python
         with:
-          version: "0.11.6"
-          python-version: "3.12"
-          enable-cache: true
-      - name: Install frozen dependencies
-        run: uv sync --frozen --dev
+          dev-dependencies: "true"
       - name: Check types
         run: uv run mypy src tests scripts
       - name: Run offline tests with critical-path branch coverage

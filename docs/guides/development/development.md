@@ -41,12 +41,13 @@ Normal tests and builds require no LinkedIn access. First-time setup belongs in 
 
 ```text
 .
+├── .github/actions/         # repository-owned composite CI setup
 ├── .github/workflows/       # validation, collection, maintenance
 ├── configs/                 # classification and search YAML
 ├── data/                    # ignored SQLite runtime state
 ├── docs/                    # Markdown guides and visual assets
 ├── migrations/              # Alembic history
-├── scripts/                 # migration and documentation checks
+├── scripts/                 # operational helpers and validation checks
 ├── site/                    # Next.js website and Playwright tests
 ├── src/opportunities/       # Python package
 ├── tests/                   # unit, integration, and fixtures
@@ -192,6 +193,8 @@ docker compose run --rm opportunities --help
 ```
 
 Run affected smoke tests when changing image stages, runtime users, mounts, volumes, SQLite paths, permissions, or standalone website output. Operational container procedures belong to [Docker](../operations/docker.md).
+
+GitHub Actions changes must also pass the pinned `actionlint` check in `docker-ci.yml`. For canonical-state automation, review the operator wrapper, called workflow, protected environment, any sanitized handoff artifact, and referenced shell script together. Keep repository write and validation-dispatch permissions confined to the README pull-request job, keep VPS secrets in main-only environments, and never place canonical SQLite in Actions cache or artifacts.
 
 ### Full cross-project validation
 

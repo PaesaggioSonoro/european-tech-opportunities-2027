@@ -48,7 +48,7 @@ Security fixes target `main` and, when practical, the latest published release. 
 | Website | Read-only SQLite, validated links, no mutation API, and defensive production headers |
 | README | Bounded generated projection with atomic replacement |
 | Public exports | Fixed field allowlist, spreadsheet-safe CSV text, atomic replacement, and read-only delivery |
-| Automation | Offline validation separated from authorized collection, with verified durable snapshots and atomic deployment |
+| Automation | Offline validation separated from authorized collection, verified durable snapshots, no canonical state in Actions cache or artifacts, job-scoped permissions, sanitized handoffs, and locked deployment |
 | Containers | Unprivileged processes, explicit mounts, pinned images, and reduced runtime tooling |
 
 Detailed behavior is documented in [Architecture](docs/guides/development/architecture.md), [Configuration](docs/guides/getting-started/configuration.md), [Database](docs/guides/operations/database.md), [Automation](docs/guides/operations/automation.md), and [Docker](docs/guides/operations/docker.md).
@@ -136,7 +136,10 @@ For dependencies and releases:
 - lint workflows and Dockerfiles, run CodeQL security analysis for Python and TypeScript, reject fixable high or critical image vulnerabilities, and verify production security headers in CI;
 - keep version references synchronized across metadata, lockfiles, images, user agents, and documentation;
 - publish only from a clean, validated tree;
-- protect deployment keys, artifacts, caches, snapshots, backups, and package credentials with least privilege.
+- protect deployment keys, artifacts, caches, snapshots, backups, and package credentials with least privilege;
+- keep VPS secrets only in main-restricted `canonical-state` and `production` GitHub environments, delete repository-level copies, and remove this repository's access to equivalent organization secrets;
+- keep canonical processing read-only to GitHub, isolate repository mutation in scoped jobs, and never place VPS credentials or canonical SQLite state in pull-request jobs, Actions cache, or artifacts;
+- grant the README mutation job `actions: write` only so it can dispatch validation on its generated commit, and require exact README-only pull-request scope before that dispatch.
 
 ## Responsible disclosure
 

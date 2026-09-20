@@ -1,0 +1,152 @@
+name: Reusable README pull request
+
+on:
+  workflow_call:
+    inputs:
+      artifact_name:
+        description: README handoff artifact produced by canonical-state processing.
+        required: true
+        type: string
+      branch:
+        description: Fixed automation branch to update.
+        required: true
+        type: string
+      title:
+        description: Pull-request title.
+        required: true
+        type: string
+      body:
+        description: Pull-request body.
+        required: true
+        type: string
+      commit_message:
+        description: Commit message.
+        required: true
+        type: string
+      auto_merge:
+        description: Request squash auto-merge after an exact scope check.
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Defense in depth: repository mutation is valid only for a main-branch caller.
+      - name: Require the default branch for repository mutation
+        if: github.ref != 'refs/heads/main'
+        shell: bash
+        run: |
+          echo "README automation may run only from main."
+          exit 1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download generated README
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ runner.temp }}/readme-handoff
+      - name: Install generated README
+        shell: bash
+        run: cp "${{ runner.temp }}/readme-handoff/README.md" README.md
+      - name: Open or update scoped README pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE_BRANCH: ${{ inputs.branch }}
+          UPDATE_TITLE: ${{ inputs.title }}
+          UPDATE_BODY: ${{ inputs.body }}
+          UPDATE_COMMIT_MESSAGE: ${{ inputs.commit_message }}
+          UPDATE_AUTO_MERGE: ${{ inputs.auto_merge }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr_number=$(gh pr list \
+            --head "$UPDATE_BRANCH" \
+            --base main \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+          if [ -n "$pr_number" ]; then
+            existing_scope=$(gh pr view "$pr_number" \
+              --json baseRefName,headRefName,title,files | \
+              jq -r --arg branch "$UPDATE_BRANCH" --arg title "$UPDATE_TITLE" \
+                '(.baseRefName == "main") and (.headRefName == $branch) and (.title == $title) and ([.files[].path] == ["README.md"])')
+            if [ "$existing_scope" != "true" ]; then
+              echo "Existing automation pull request has unexpected scope; refusing to mutate it."
+              exit 1
+            fi
+          fi
+
+          if git diff --quiet -- README.md; then
+            echo "No README changes to propose."
+            if [ -n "$pr_number" ]; then
+              # Prevent an older automation proposal from merging after state returns to main.
+              gh pr close "$pr_number" \
+                --comment "Closing the stale automation proposal because canonical state now matches main." \
+                --delete-branch
+            fi
+            exit 0
+          fi
+
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$UPDATE_BRANCH:refs/remotes/origin/$UPDATE_BRANCH" || true
+          git checkout -B "$UPDATE_BRANCH"
+          git add README.md
+          git commit -m "$UPDATE_COMMIT_MESSAGE"
+          git push --force-with-lease --set-upstream origin "$UPDATE_BRANCH"
+
+          if [ -z "$pr_number" ]; then
+            gh pr create \
+              --title "$UPDATE_TITLE" \
+              --body "$UPDATE_BODY" \
+              --base main \
+              --head "$UPDATE_BRANCH"
+            pr_number=$(gh pr list \
+              --head "$UPDATE_BRANCH" \
+              --base main \
+              --state open \
+              --json number \
+              --jq '.[0].number')
+          fi
+          if [ -z "$pr_number" ]; then
+            echo "Could not identify the README pull request."
+            exit 1
+          fi
+
+          # GitHub suppresses normal workflow recursion for GITHUB_TOKEN pushes. Dispatch the
+          # complete validation suite explicitly so required checks attach to this head SHA.
+          safe_scope=false
+          for attempt in 1 2 3 4 5; do
+            safe_scope=$(gh pr view "$pr_number" \
+              --json baseRefName,headRefName,title,files | \
+              jq -r --arg branch "$UPDATE_BRANCH" --arg title "$UPDATE_TITLE" \
+                '(.baseRefName == "main") and (.headRefName == $branch) and (.title == $title) and ([.files[].path] == ["README.md"])')
+            if [ "$safe_scope" = "true" ]; then
+              break
+            fi
+            sleep "$((attempt * 2))"
+          done
+          if [ "$safe_scope" != "true" ]; then
+            echo "README pull request failed the exact-scope safety check."
+            exit 1
+          fi
+
+          for validation_workflow in python-ci.yml site-ci.yml docker-ci.yml codeql.yml; do
+            gh workflow run "$validation_workflow" --ref "$UPDATE_BRANCH"
+          done
+
+          if [ "$UPDATE_AUTO_MERGE" = "true" ]; then
+            gh pr merge "$pr_number" --auto --squash
+          fi

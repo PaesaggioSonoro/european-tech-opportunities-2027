@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Docker validation is expensive, so superseded runs on the same ref are canceled.
+concurrency:
+  group: validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

@@ -1,10 +1,10 @@
-name: Scrape jobs only
+name: Scrape jobs or deploy reviewed state
 
 on:
   workflow_dispatch:
     inputs:
       open_pull_request:
-        description: "Open a scrape-only pull request when README changes"
+        description: "Open a scrape-only pull request when README changes (ignored for deployment)"
         required: false
         default: true
         type: boolean
@@ -18,311 +18,55 @@ concurrency:
   group: opportunity-collection
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
+  # Collection and deployment are mutually exclusive modes of this manual entry point.
   collect:
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    env:
-      OPPORTUNITIES_LINKEDIN_CRAWL_AUTHORIZED: ${{ vars.LINKEDIN_CRAWL_AUTHORIZED }}
-      UV_NO_DEV: "1"
-    steps:
-      - name: Verify LinkedIn crawl authorization
-        if: inputs.deploy_to_vps != true && vars.LINKEDIN_CRAWL_AUTHORIZED != 'true'
-        run: |
-          echo "Set the repository variable LINKEDIN_CRAWL_AUTHORIZED=true before collecting."
-          exit 1
+    name: Collect and preserve state
+    if: inputs.deploy_to_vps != true
+    uses: ./.github/workflows/reusable-process-state.yml
+    permissions:
+      contents: read
+    with:
+      run_scrape: true
+      crawl_authorized: ${{ vars.LINKEDIN_CRAWL_AUTHORIZED }}
+      projection_artifact_name: opportunities-scrape-projections-${{ github.run_id }}
+      readme_artifact_name: ${{ inputs.open_pull_request && format('opportunities-scrape-readme-{0}', github.run_id) || '' }}
+      backup_user: ${{ vars.VPS_BACKUP_USER || 'opportunities-backup' }}
+      ssh_port: ${{ vars.VPS_SSH_PORT || '22' }}
+      retention_days: ${{ vars.CANONICAL_STATE_RETENTION_DAYS || '365' }}
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          version: "0.11.6"
-          python-version: "3.12"
-          enable-cache: true
-      - run: uv sync --frozen --no-dev
+  # Deployment performs no source access and remains inside the protected production job.
+  deploy:
+    name: Validate, preserve, and deploy reviewed state
+    if: inputs.deploy_to_vps
+    uses: ./.github/workflows/reusable-process-state.yml
+    permissions:
+      contents: read
+    with:
+      generate_exports: true
+      require_crawl_authorization: false
+      deploy_to_vps: true
+      environment_name: production
+      projection_artifact_name: opportunities-deployment-projections-${{ github.run_id }}
+      backup_user: ${{ vars.VPS_BACKUP_USER || 'opportunities-backup' }}
+      ssh_port: ${{ vars.VPS_SSH_PORT || '22' }}
+      retention_days: ${{ vars.CANONICAL_STATE_RETENTION_DAYS || '365' }}
 
-      - name: Require main branch for VPS deployment
-        if: inputs.deploy_to_vps && github.ref != 'refs/heads/main'
-        run: |
-          echo "VPS deployment is permitted only from the main branch."
-          exit 1
-
-      - name: Restore canonical SQLite cache accelerator
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: data/opportunities.db
-          key: opportunities-db-${{ github.run_id }}
-          restore-keys: opportunities-db-
-
-      - name: Configure restricted VPS snapshot access
-        env:
-          VPS_BACKUP_SSH_PRIVATE_KEY: ${{ secrets.VPS_BACKUP_SSH_PRIVATE_KEY }}
-          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
-        shell: bash
-        run: |
-          if [ -z "$VPS_BACKUP_SSH_PRIVATE_KEY" ] || [ -z "$VPS_SSH_KNOWN_HOSTS" ]; then
-            echo "Restricted backup key and verified known_hosts entry are required."
-            exit 1
-          fi
-          install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$VPS_BACKUP_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_backup_ed25519"
-          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/id_backup_ed25519" "$HOME/.ssh/known_hosts"
-
-      - name: Reconcile cache with verified VPS snapshot
-        env:
-          VPS_BACKUP_HOST: ${{ secrets.VPS_HOST }}
-          VPS_BACKUP_USER: ${{ vars.VPS_BACKUP_USER || 'opportunities-backup' }}
-          VPS_BACKUP_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
-        shell: bash
-        run: bash scripts/canonical_state_store.sh restore
-
-      - name: Configure VPS SSH access for bootstrap
-        env:
-          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
-        shell: bash
-        run: |
-          if [ -s data/opportunities.db ]; then
-            echo "Canonical state was restored from verified cache or restricted VPS snapshot storage; VPS credentials are not needed."
-            exit 0
-          fi
-          if [ -z "$VPS_SSH_PRIVATE_KEY" ] || [ -z "$VPS_SSH_KNOWN_HOSTS" ]; then
-            echo "VPS SSH key and verified known_hosts entry are required when cache and durable state are absent."
-            exit 1
-          fi
-          install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
-          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
-
-      - name: Bootstrap canonical state from VPS
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
-        shell: bash
-        run: |
-          if [ -s data/opportunities.db ]; then
-            echo "Using canonical state restored from verified cache or restricted VPS snapshot storage."
-            exit 0
-          fi
-          if [[ ! "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]] \
-            || [[ ! "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9._-]*$ ]] \
-            || [[ ! "$VPS_PORT" =~ ^[0-9]{1,5}$ ]] \
-            || ((10#$VPS_PORT < 1 || 10#$VPS_PORT > 65535)); then
-            echo "VPS bootstrap configuration is missing or invalid."
-            exit 1
-          fi
-
-          mkdir -p data
-          ssh -i "$HOME/.ssh/id_ed25519" -p "$VPS_PORT" -o BatchMode=yes \
-            "${VPS_USER}@${VPS_HOST}" \
-            "cat /srv/european-tech-opportunities-2027/data/opportunities.db" \
-            > data/opportunities.db
-          uv run python -c "import sqlite3; db=sqlite3.connect('file:data/opportunities.db?mode=ro', uri=True); result=db.execute('PRAGMA integrity_check').fetchone(); db.close(); assert result == ('ok',), result"
-
-      - name: Remove bootstrap SSH credential
-        if: always()
-        shell: bash
-        run: rm -f "$HOME/.ssh/id_ed25519"
-
-      # Migration failure is a stop condition; restored canonical state is never rebuilt.
-      - name: Migrate database
-        run: uv run opportunities db-upgrade
-
-      - name: Scrape, persist, and render README
-        if: inputs.deploy_to_vps != true
-        shell: bash
-        run: |
-          set +e
-          uv run opportunities scrape
-          code=$?
-          set -e
-          if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
-            exit "$code"
-          fi
-          if [ "$code" -eq 2 ]; then
-            echo "Partial success: successful searches were persisted; failed searches changed nothing."
-          fi
-
-      - name: Generate public exports for deployment
-        if: inputs.deploy_to_vps == true
-        run: uv run opportunities export-public
-
-      - name: Validate database and generated projections
-        run: uv run opportunities validate
-      - name: Checkpoint SQLite
-        run: uv run python -c "import sqlite3; db=sqlite3.connect('data/opportunities.db'); db.execute('PRAGMA wal_checkpoint(TRUNCATE)'); db.close()"
-
-      - name: Publish and restore-verify VPS canonical snapshot
-        id: canonical-snapshot
-        env:
-          VPS_BACKUP_HOST: ${{ secrets.VPS_HOST }}
-          VPS_BACKUP_USER: ${{ vars.VPS_BACKUP_USER || 'opportunities-backup' }}
-          VPS_BACKUP_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
-          CANONICAL_STATE_RETENTION_DAYS: ${{ vars.CANONICAL_STATE_RETENTION_DAYS || '365' }}
-        shell: bash
-        run: bash scripts/canonical_state_store.sh publish
-
-      - name: Remove restricted VPS snapshot credentials
-        if: always()
-        shell: bash
-        run: rm -f "$HOME/.ssh/id_backup_ed25519" "$HOME/.ssh/known_hosts"
-
-      - name: Save canonical SQLite cache accelerator
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: data/opportunities.db
-          key: opportunities-db-${{ github.run_id }}
-      - name: Upload database backup and README
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opportunities-state-${{ github.run_id }}
-          retention-days: 30
-          path: |
-            ${{ steps.canonical-snapshot.outputs.snapshot_database }}
-            ${{ steps.canonical-snapshot.outputs.snapshot_manifest }}
-            data/exports/open-opportunities.csv
-            data/exports/open-opportunities.json
-            README.md
-
-      - name: Open or update scrape-only pull request
-        if: inputs.open_pull_request
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          if git diff --quiet -- README.md; then
-            echo "No README changes."
-            exit 0
-          fi
-          branch="automated/scrape-update"
-          title="data: scrape position updates"
-          body="Manual scrape-only update. Merge remains manual."
-          gh auth setup-git
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin "$branch:refs/remotes/origin/$branch" || true
-          git checkout -B "$branch"
-          git add README.md
-          git commit -m "data: update position tables"
-          git push --force-with-lease --set-upstream origin "$branch"
-          if [ -z "$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')" ]; then
-            gh pr create --title "$title" \
-              --body "$body" \
-              --base main --head "$branch"
-          fi
-
-      - name: Configure VPS SSH access for deployment
-        if: inputs.deploy_to_vps && github.ref == 'refs/heads/main'
-        env:
-          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
-        shell: bash
-        run: |
-          if [ -z "$VPS_SSH_PRIVATE_KEY" ] || [ -z "$VPS_SSH_KNOWN_HOSTS" ]; then
-            echo "VPS SSH key and verified known_hosts entry are required."
-            exit 1
-          fi
-          install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
-          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
-
-      - name: Deploy validated database and public exports to VPS
-        if: inputs.deploy_to_vps && github.ref == 'refs/heads/main'
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          trap 'rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"' EXIT
-
-          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ]; then
-            echo "VPS host and restricted deployment user are required."
-            exit 1
-          fi
-          if [[ ! "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]] \
-            || [[ ! "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9._-]*$ ]] \
-            || [[ ! "$VPS_PORT" =~ ^[0-9]{1,5}$ ]] \
-            || ((10#$VPS_PORT < 1 || 10#$VPS_PORT > 65535)); then
-            echo "VPS SSH configuration is missing or invalid."
-            exit 1
-          fi
-
-          remote_dir="/srv/european-tech-opportunities-2027/data"
-          remote_database="$remote_dir/opportunities.db"
-          remote_previous="$remote_dir/opportunities.db.previous"
-          remote_export_dir="$remote_dir/exports"
-          remote_csv="$remote_export_dir/open-opportunities.csv"
-          remote_json="$remote_export_dir/open-opportunities.json"
-          remote_database_upload="$remote_dir/.opportunities-${GITHUB_RUN_ID}.db.upload"
-          remote_csv_upload="$remote_dir/.open-opportunities-${GITHUB_RUN_ID}.csv.upload"
-          remote_json_upload="$remote_dir/.open-opportunities-${GITHUB_RUN_ID}.json.upload"
-          remote_lock="/srv/european-tech-opportunities-2027/.database-deploy.lock"
-
-          database_sha=$(sha256sum data/opportunities.db | cut -d ' ' -f 1)
-          csv_sha=$(sha256sum data/exports/open-opportunities.csv | cut -d ' ' -f 1)
-          json_sha=$(sha256sum data/exports/open-opportunities.json | cut -d ' ' -f 1)
-          ssh_target="${VPS_USER}@${VPS_HOST}"
-          ssh_options=(-i "$HOME/.ssh/id_ed25519" -p "$VPS_PORT" -o BatchMode=yes)
-
-          scp -i "$HOME/.ssh/id_ed25519" -P "$VPS_PORT" -o BatchMode=yes \
-            data/opportunities.db "${ssh_target}:${remote_database_upload}"
-          scp -i "$HOME/.ssh/id_ed25519" -P "$VPS_PORT" -o BatchMode=yes \
-            data/exports/open-opportunities.csv "${ssh_target}:${remote_csv_upload}"
-          scp -i "$HOME/.ssh/id_ed25519" -P "$VPS_PORT" -o BatchMode=yes \
-            data/exports/open-opportunities.json "${ssh_target}:${remote_json_upload}"
-
-          # Validated remote paths are intentionally expanded before invoking SSH.
-          # shellcheck disable=SC2029
-          remote_hashes=$(ssh "${ssh_options[@]}" "$ssh_target" \
-            "sha256sum '$remote_database_upload' '$remote_csv_upload' '$remote_json_upload' | cut -d ' ' -f 1")
-          expected_hashes=$(printf '%s\n%s\n%s\n' "$database_sha" "$csv_sha" "$json_sha")
-          if [ "$expected_hashes" != "$remote_hashes" ]; then
-            # shellcheck disable=SC2029
-            ssh "${ssh_options[@]}" "$ssh_target" \
-              "rm -f '$remote_database_upload' '$remote_csv_upload' '$remote_json_upload'"
-            echo "One or more uploaded checksums do not match."
-            exit 1
-          fi
-
-          # shellcheck disable=SC2029
-          ssh "${ssh_options[@]}" "$ssh_target" \
-            "DATABASE_IMPORT='$remote_database_upload' CSV_IMPORT='$remote_csv_upload' JSON_IMPORT='$remote_json_upload' DATABASE_FILE='$remote_database' PREVIOUS_FILE='$remote_previous' EXPORT_DIR='$remote_export_dir' CSV_FILE='$remote_csv' JSON_FILE='$remote_json' LOCK_FILE='$remote_lock' DATABASE_SHA='$database_sha' CSV_SHA='$csv_sha' JSON_SHA='$json_sha' bash -s" <<'REMOTE'
-          set -euo pipefail
-          trap 'rm -f "$DATABASE_IMPORT" "$CSV_IMPORT" "$JSON_IMPORT"' EXIT
-
-          exec 9>"$LOCK_FILE"
-          flock -n 9
-
-          test "$(sha256sum "$DATABASE_IMPORT" | cut -d " " -f 1)" = "$DATABASE_SHA"
-          test "$(sha256sum "$CSV_IMPORT" | cut -d " " -f 1)" = "$CSV_SHA"
-          test "$(sha256sum "$JSON_IMPORT" | cut -d " " -f 1)" = "$JSON_SHA"
-
-          if [ -f "$DATABASE_FILE" ]; then
-            cp -p "$DATABASE_FILE" "$PREVIOUS_FILE"
-          fi
-
-          mkdir -p "$EXPORT_DIR"
-          chgrp opportunities-site "$EXPORT_DIR" "$DATABASE_IMPORT" "$CSV_IMPORT" "$JSON_IMPORT"
-          chmod 750 "$EXPORT_DIR"
-          chmod 660 "$DATABASE_IMPORT"
-          chmod 640 "$CSV_IMPORT" "$JSON_IMPORT"
-          rm -f "${DATABASE_FILE}-wal" "${DATABASE_FILE}-shm" "${DATABASE_FILE}-journal"
-          mv "$DATABASE_IMPORT" "$DATABASE_FILE"
-          mv "$CSV_IMPORT" "$CSV_FILE"
-          mv "$JSON_IMPORT" "$JSON_FILE"
-
-          test "$(sha256sum "$DATABASE_FILE" | cut -d " " -f 1)" = "$DATABASE_SHA"
-          test "$(sha256sum "$CSV_FILE" | cut -d " " -f 1)" = "$CSV_SHA"
-          test "$(sha256sum "$JSON_FILE" | cut -d " " -f 1)" = "$JSON_SHA"
-          REMOTE
+  # GitHub mutation is isolated from canonical state and VPS credentials.
+  update-readme:
+    name: Propose reviewed README projection
+    if: inputs.deploy_to_vps != true && inputs.open_pull_request
+    needs: collect
+    uses: ./.github/workflows/reusable-readme-pr.yml
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    with:
+      artifact_name: opportunities-scrape-readme-${{ github.run_id }}
+      branch: automated/scrape-update
+      title: "data: scrape position updates"
+      commit_message: "data: update position tables"
+      body: "Manual scrape-only update. Merge remains manual."

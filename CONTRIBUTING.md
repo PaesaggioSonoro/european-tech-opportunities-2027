@@ -181,6 +181,8 @@ docker compose build
 docker compose run --rm opportunities --help
 ```
 
+Automation changes must pass the pinned `actionlint` check in `docker-ci.yml`. Preserve job-scoped least privilege, main-only environment secrets, the shared one-writer concurrency group, sanitized handoff artifacts, explicit validation of bot-generated commits, and the separation between canonical processing and GitHub mutation. Never place canonical SQLite in Actions cache or artifacts; protected deployment must consume state within its approved job.
+
 Do not claim a check passed unless it ran. Explain omissions in the pull request. Live tests require deliberate selection and express authorization; environment interlocks do not grant permission.
 
 ## Documentation changes

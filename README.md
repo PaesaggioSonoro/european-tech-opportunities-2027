@@ -111,7 +111,7 @@ Missing a relevant opportunity? [Suggest a listing](https://github.com/simonesie
 - **TypeScript web application:** server-rendered Next.js directory with search, filters, sorting, pagination, and shareable URLs.
 - **Canonical lifecycle state:** SQLite tracks provenance, first/last-seen timestamps, isolated search outcomes, conservative closure evidence, and daily availability checks.
 - **Production-grade validation:** strict typing, unit and integration tests, Playwright end-to-end tests, branch coverage gates, CodeQL security analysis, and parsing/classification benchmarks.
-- **Automated operations:** Alembic migrations, scheduled collection, availability checks, sanitized public CSV/JSON exports, restore-verified backups, CI, and atomic deployment.
+- **Automated operations:** Alembic migrations, scheduled collection, availability checks, sanitized public CSV/JSON exports, restore-verified backups, CI, and locked deployment with checksum-verified atomic file replacement.
 
 ## How it works
 

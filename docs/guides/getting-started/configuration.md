@@ -294,11 +294,13 @@ The local application and Docker pipeline use:
 OPPORTUNITIES_LINKEDIN_CRAWL_AUTHORIZED=true
 ```
 
-The GitHub nightly, scrape-only, and availability-only workflows use the repository variable:
+The GitHub nightly, scrape-only, and availability-only workflows use the non-secret repository variable:
 
 ```text
 LINKEDIN_CRAWL_AUTHORIZED=true
 ```
+
+VPS credentials are not repository variables or repository-level secrets. Production automation reads them from the main-only `canonical-state` and `production` GitHub environments described in the [automation guide](../operations/automation.md#protected-environments-and-repository-settings).
 
 These values are separate because they protect different execution environments.
 
@@ -329,11 +331,13 @@ Workflow behavior is documented in [Automation](../operations/automation.md#coll
 
 ### Production collection
 
-- store authorization state in the protected execution environment;
+- keep the operator authorization attestation in the `LINKEDIN_CRAWL_AUTHORIZED` repository variable;
+- keep VPS credentials only in the main-only `canonical-state` and `production` GitHub environments, never at repository scope;
+- allow `canonical-state` to run unattended for the nightly schedule and require approval on `production` when practical;
 - keep request limits conservative;
 - preserve the one-writer model;
 - back up SQLite before recovery or rebuild operations;
-- configure the restricted SFTP-only VPS snapshot account and review snapshot, artifact, cache, deployment, and secret visibility.
+- configure the restricted SFTP-only VPS snapshot account, keep canonical SQLite out of Actions cache and artifacts, and review deployment and secret visibility.
 
 ### Production website
 

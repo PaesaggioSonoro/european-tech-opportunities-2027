@@ -410,6 +410,18 @@ Do not manually rewrite timestamps or status values without preserving evidence.
 
 ## GitHub Actions and deployment
 
+### Canonical-state job cannot access its environment
+
+Confirm that:
+
+- the workflow was dispatched from `main`;
+- the environment is named exactly `canonical-state`;
+- its deployment-branch rule allows `main` and no other branch or tag;
+- unattended scheduled runs are not waiting for a required reviewer;
+- all five environment secrets are present: `VPS_HOST`, `VPS_USER`, `VPS_SSH_PRIVATE_KEY`, `VPS_BACKUP_SSH_PRIVATE_KEY`, and `VPS_SSH_KNOWN_HOSTS`.
+
+Do not copy these secrets back to repository scope to bypass an environment-policy failure. Correct the environment and branch policy. The final deployment separately uses the `production` environment and should remain approval-gated when practical.
+
 ### Docker image pull or Trivy scan fails
 
 First distinguish infrastructure failure from a vulnerability finding:
@@ -421,13 +433,13 @@ The workflow retries the immutable digest-pinned Trivy image pull three times wi
 
 Do not remove digest pins, disable Trivy, broaden vulnerability exclusions, or change the scan exit code to turn an infrastructure or security failure into success.
 
-### Collection cache is missing
+### Canonical snapshot is missing
 
-Cache is only an accelerator, never the durable source of truth. No manual action is needed when restricted VPS snapshot storage is healthy: the workflow downloads `latest.json`, verifies its timestamped SQLite file, and replaces the missing cache. It writes a new byte-identical cache only after round-trip restore verification.
+Canonical SQLite is never stored in GitHub Actions cache or artifacts. When restricted VPS snapshot storage is healthy, the workflow downloads `latest.json`, verifies its timestamped SQLite file, and uses that exact state.
 
-If both cache and `latest.json` are absent during initial rollout and the snapshot directory is empty, the workflow can seed from the live VPS database. If timestamped snapshots exist but the pointer is missing, automation stops so the pointer can be recovered instead of starting an unrelated history.
+During initial rollout, if `latest.json` is absent and the snapshot directory is empty, the workflow may seed from the reviewed live VPS database after independent integrity, foreign-key, required-table, and Alembic-revision checks. If timestamped snapshots exist but the pointer is missing, automation stops so the pointer can be recovered instead of starting an unrelated history.
 
-The README cannot reconstruct canonical state.
+The README and sanitized projection artifacts cannot reconstruct canonical state.
 
 ### VPS snapshot restore or publication fails
 
@@ -435,6 +447,7 @@ Do not bypass host-key, manifest, checksum, or restore checks to finish a collec
 
 Check, without printing credentials:
 
+- the main-only `canonical-state` environment and its secrets;
 - `VPS_HOST`, `VPS_BACKUP_USER`, and `VPS_SSH_PORT`;
 - the `VPS_BACKUP_SSH_PRIVATE_KEY` secret and verified `VPS_SSH_KNOWN_HOSTS` entry;
 - SFTP-only account access to `/state`;
@@ -456,9 +469,11 @@ For recovery, walk the manifest `previous_snapshot` references newest to oldest.
 
 Verify:
 
+- that the `production` environment approved the deployment and allows only `main`;
 - `VPS_HOST`;
 - `VPS_USER`;
 - `VPS_SSH_PRIVATE_KEY`;
+- `VPS_BACKUP_SSH_PRIVATE_KEY` for the restore/publication phase;
 - `VPS_SSH_KNOWN_HOSTS`;
 - optional `VPS_SSH_PORT`;
 - access to `/srv/european-tech-opportunities-2027/data` for the restricted SSH user;
@@ -485,7 +500,7 @@ Deployment sequencing is documented in [Automation](automation.md#vps-deployment
 Collection workflows deliberately provide no state-rebuild input. They stop rather than deleting an incompatible restored database or its sidecars.
 
 1. Preserve the failed state and stop additional writers.
-2. Review verified durable manifests and snapshots first, then retained artifacts, `opportunities.db.previous`, and finally cache accelerators.
+2. Review verified durable manifests and snapshots first, then `opportunities.db.previous`; sanitized projection artifacts cannot restore state.
 3. Verify the selected snapshot’s checksum, schema revision, integrity, and foreign keys.
 4. Restore it with the procedure in [Database lifecycle](database.md#restore).
 
@@ -495,14 +510,18 @@ Do not initialize an empty database merely to make automation pass. An intention
 
 Confirm that:
 
-- repository auto-merge is enabled;
-- branch protection defines the intended required checks;
+- repository auto-merge is enabled and GitHub Actions may create pull requests;
+- the README mutation job has `actions: write`, `contents: write`, and `pull-requests: write`;
+- branch protection requires `ruff`, `python`, `site`, `docker`, `Analyze (Python)`, and `Analyze (TypeScript)`;
 - the pull request targets `main`;
 - its head branch is `automated/nightly-full-update`;
 - its title is `data: nightly availability and scrape update`;
-- `README.md` is the only changed file.
+- `README.md` is the only changed file;
+- manual `workflow_dispatch` runs exist for all four validation workflows on the automation branch head SHA.
 
-The workflow refuses auto-merge when any scope check differs. Do not weaken that check to merge unrelated changes; restore the fixed automation branch to the expected README-only diff instead.
+A branch push made by `GITHUB_TOKEN` does not trigger ordinary push or pull-request recursion. The README mutation workflow compensates by explicitly dispatching all four validation workflows after its exact-scope check. If those runs are missing, inspect that job for workflow-dispatch permission or policy failures; do not bypass required checks.
+
+The workflow refuses validation dispatch and auto-merge when any scope check differs. Do not weaken that check to merge unrelated changes; restore the fixed automation branch to the expected README-only diff instead.
 
 ## Docker failures
 

@@ -1,0 +1,24 @@
+name: Set up Python and uv
+description: Install the pinned Python/uv toolchain and synchronize the frozen environment.
+inputs:
+  dev-dependencies:
+    description: Install development dependencies.
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Set up uv and Python
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        version: "0.11.6"
+        python-version: "3.12"
+        enable-cache: true
+    - name: Install frozen runtime dependencies
+      if: inputs.dev-dependencies != 'true'
+      shell: bash
+      run: uv sync --frozen --no-dev
+    - name: Install frozen development dependencies
+      if: inputs.dev-dependencies == 'true'
+      shell: bash
+      run: uv sync --frozen --dev

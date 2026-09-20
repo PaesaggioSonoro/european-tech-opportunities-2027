@@ -71,6 +71,10 @@ sftp_command=(
   -o IdentitiesOnly=yes
   -o StrictHostKeyChecking=yes
   -o "UserKnownHostsFile=$VPS_BACKUP_KNOWN_HOSTS"
+  -o ConnectTimeout=20
+  -o ConnectionAttempts=1
+  -o ServerAliveInterval=15
+  -o ServerAliveCountMax=2
   "$VPS_BACKUP_USER@$VPS_BACKUP_HOST"
 )
 
@@ -125,7 +129,7 @@ restore_state() {
     status=$?
   fi
   if ((status == 1)); then
-    echo "No VPS canonical snapshot exists yet; retaining the cache or using live-database bootstrap."
+    echo "No VPS canonical snapshot exists yet; verify any existing candidate or use live-database bootstrap."
     set_output state_source "no-vps-snapshot"
     return 0
   fi
@@ -140,8 +144,8 @@ restore_state() {
       --database "$CANONICAL_STATE_DATABASE" \
       --manifest "$latest_manifest" \
       --expected-database-key "$database_key" >/dev/null 2>&1; then
-    echo "Cache matches the latest verified VPS snapshot."
-    set_output state_source "verified-cache"
+    echo "Existing database matches the latest verified VPS snapshot."
+    set_output state_source "verified-existing-database"
     return 0
   fi
 
@@ -257,7 +261,7 @@ publish_state() {
     exit 1
   fi
 
-  # Keep cache, artifact, and deployment files byte-identical to the verified snapshot.
+  # Keep the canonical working copy byte-identical to the verified snapshot.
   local canonical_copy="${CANONICAL_STATE_DATABASE}.snapshot-copy"
   cp "$verified_database" "$canonical_copy"
   mv -f "$canonical_copy" "$CANONICAL_STATE_DATABASE"

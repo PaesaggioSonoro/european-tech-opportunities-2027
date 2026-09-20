@@ -269,6 +269,8 @@ The supported architecture requires:
 - one canonical SQLite writer;
 - read-only website database access;
 - versioned, checksum-verified SQLite snapshots with automated restore tests;
+- main-only GitHub environments for canonical-state and deployment credentials;
+- exact-scope validation of automation-generated README commits;
 - atomic README and public-export replacement;
 - offline deterministic tests by default.
 

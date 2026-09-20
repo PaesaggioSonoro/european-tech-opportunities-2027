@@ -45,3 +45,5 @@
 - [ ] Search changes use a unique bounded query, include rationale in `notes`, and pass config validation.
 - [ ] Classification changes include nearby acceptance and rejection tests and preserve conservative evidence requirements.
 - [ ] Visible website changes preserve accessibility, responsive behavior, safe links, and empty states.
+- [ ] Automation changes preserve one-writer concurrency, pin external actions, use job-scoped least privilege, keep VPS secrets in main-only environments, and isolate GitHub mutation from canonical processing.
+- [ ] Bot-generated commits receive required validation, handoff artifacts are sanitized and short-lived, and canonical SQLite never enters Actions cache or artifacts.

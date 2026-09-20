@@ -8,15 +8,21 @@ on:
     - cron: "31 5 * * 1"
   workflow_dispatch:
 
-permissions:
-  actions: read
-  contents: read
-  packages: read
-  security-events: write
+# A newer commit supersedes analysis for the same ref without affecting other refs.
+concurrency:
+  group: validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.label }})
+    # Security-event upload is scoped to analysis; no repository mutation is allowed.
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
