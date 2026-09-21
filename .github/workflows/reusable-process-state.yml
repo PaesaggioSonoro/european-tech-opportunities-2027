@@ -67,6 +67,22 @@ on:
         required: false
         default: "365"
         type: string
+    secrets:
+      VPS_HOST:
+        description: VPS hostname or IP address.
+        required: false
+      VPS_USER:
+        description: Restricted deployment SSH user.
+        required: false
+      VPS_SSH_PRIVATE_KEY:
+        description: Deployment SSH private key used for bootstrap and publication.
+        required: false
+      VPS_BACKUP_SSH_PRIVATE_KEY:
+        description: Restricted SFTP snapshot private key.
+        required: false
+      VPS_SSH_KNOWN_HOSTS:
+        description: Verified SSH known-hosts entries.
+        required: false
 
 permissions:
   contents: read

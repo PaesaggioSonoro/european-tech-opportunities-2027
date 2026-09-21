@@ -28,6 +28,12 @@ jobs:
     uses: ./.github/workflows/reusable-process-state.yml
     permissions:
       contents: read
+    secrets:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      VPS_BACKUP_SSH_PRIVATE_KEY: ${{ secrets.VPS_BACKUP_SSH_PRIVATE_KEY }}
+      VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
     with:
       run_scrape: true
       crawl_authorized: ${{ vars.LINKEDIN_CRAWL_AUTHORIZED }}
@@ -44,6 +50,12 @@ jobs:
     uses: ./.github/workflows/reusable-process-state.yml
     permissions:
       contents: read
+    secrets:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      VPS_BACKUP_SSH_PRIVATE_KEY: ${{ secrets.VPS_BACKUP_SSH_PRIVATE_KEY }}
+      VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
     with:
       generate_exports: true
       require_crawl_authorization: false
