@@ -268,7 +268,7 @@ test("publishes canonical SEO and crawler metadata", async ({page, request}) => 
     siteConfig.maintainer.name
   );
   await expect(page.locator('script[src="https://cloud.umami.is/script.js"]')).toHaveCount(0);
-  await expect(page.getByText("Last updated: 17 Jul 2026")).toBeVisible();
+  await expect(page.getByText("Last successful collection: 17 Jul 2026")).toBeVisible();
 
   const jsonLd = await page.locator('script[type="application/ld+json"]').textContent();
   expect(jsonLd).not.toBeNull();

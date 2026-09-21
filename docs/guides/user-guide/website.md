@@ -1,6 +1,6 @@
 # European Tech Opportunities 2027 Website Guide
 
-[← Documentation hub](../../README.md) · [CLI reference](cli.md) · [Search registry](search-registry.md) · [Docker and deployment](../operations/docker.md) · [Security policy](../../../SECURITY.md) · [Open the live site](https://opportunities2027.simonesiega.com/)
+[← Documentation hub](../../README.md) · [CLI reference](cli.md) · [Search registry](search-registry.md) · [Docker and deployment](../operations/docker.md) · [Security policy](../../../SECURITY.md) · [Privacy notice](../../../PRIVACY.md) · [Open the live site](https://opportunities2027.simonesiega.com/)
 
 This is the canonical website guide for the project. The [live website](https://opportunities2027.simonesiega.com/) is the primary public interface: it exposes every currently open Internship and New Grad opportunity from canonical SQLite state, while the root README intentionally shows bounded previews for both types.
 
@@ -76,7 +76,7 @@ Sortable columns include:
 - location;
 - first-seen date.
 
-Search, filtering, sorting, page size, and pagination affect only the displayed result set. The table defaults to newest first with 10 rows per page and offers 10, 20, 30, 50, or 100 rows per page. None of this presentation state mutates canonical state or influences collection.
+Search, filtering, sorting, page size, and pagination affect only the displayed result set. The table defaults to newest first with 10 rows per page and offers 10, 20, 30, 50, or 100 rows per page. None of this presentation state mutates lifecycle state or influences collection.
 
 The complete directory view is encoded in the URL so its filters, sorting, page size, and current page can be bookmarked or shared. Default values are omitted to keep canonical URLs concise.
 
@@ -108,9 +108,9 @@ Two download controls appear immediately to the left of the open-role count:
 
 Both files contain every currently open opportunity at generation time. Their fixed schema includes only LinkedIn job ID, company, title, location, canonical listing URL, category, industries, employment type, and start date. They exclude status, first/last-seen and update timestamps, provenance, search runs, closure evidence, diagnostics, and all other lifecycle or operational state.
 
-The Python pipeline generates and validates both files from canonical SQLite. CSV output neutralizes cells that spreadsheet applications could interpret as formulas. The website serves the generated files as read-only attachments and returns a generic unavailable response when a file is absent; it never creates exports from browser input.
+The Python pipeline generates and validates both files from SQLite. CSV output neutralizes cells that spreadsheet applications could interpret as formulas. The website serves the generated files as read-only attachments and returns a generic unavailable response when a file is absent; it never creates exports from browser input.
 
-Downloads represent the latest deployed projection and are not a canonical backup or complete historical dataset.
+Downloads represent the latest deployed projection, not a backup or complete historical dataset.
 
 ## Data interpretation
 
@@ -162,7 +162,7 @@ The directory recognizes these query parameters:
 | `country` | Exact country option |
 | `category` | Exact internal technology category |
 | `type` | Exact normalized employment type: `internship` or `new-grad` |
-| `first-seen` | Recency window based on the directory's first observation: `24-hours`, `7-days`, or `30-days` |
+| `first-seen` | Recency window based on `first_seen_at`: `24-hours`, `7-days`, or `30-days` |
 | `sort` | Sort field and direction, such as `first-seen-desc`, `company-asc`, `role-desc`, or `location-asc` |
 | `page-size` | Rows per page: `10`, `20`, `30`, `50`, or `100` |
 | `page` | One-based result page |
@@ -175,7 +175,7 @@ https://opportunities2027.simonesiega.com/?country=Germany&type=internship&first
 
 Selecting a filter, sorting a column, changing page size, or moving between pages updates browser history, and browser back/forward navigation restores the complete earlier view. Search typing replaces the current history entry to avoid creating one entry per keystroke. Changing filters, sorting, or page size returns the view to page one. Reset removes the filter parameters and current page while preserving sorting, page size, and unrelated parameters.
 
-The first-seen filter uses the immutable canonical `first_seen_at` value relative to the directory request time. It describes when this project first accepted the listing, not when the employer posted it.
+The first-seen filter uses the immutable `first_seen_at` value relative to the directory request time. For a new listing, that value is initialized from LinkedIn's relative posting age when available and otherwise from the project's first accepted observation. It is therefore an approximate publication timestamp in the first case, not a precise employer-supplied date.
 
 Unsupported filter, sort, page-size, and page values are ignored or safely constrained. Query parameters are untrusted presentation input and never reach a database write path.
 
@@ -213,7 +213,7 @@ The website:
 - never runs migrations;
 - never inserts, updates, closes, or reopens jobs;
 - never performs LinkedIn requests;
-- never treats browser activity as canonical state;
+- never treats browser activity as lifecycle state;
 - never exposes a mutation API;
 - serves only the two fixed generated public-export filenames;
 - observes a newly deployed database and exports on subsequent requests.
@@ -277,7 +277,7 @@ The website never collects, migrates, or synchronizes data itself.
 Normal automation keeps collection/review and production deployment separate:
 
 1. the controlled pipeline writer performs availability auditing and/or collection;
-2. the resulting canonical state and public exports are validated, then SQLite is checkpointed and published as a verified durable snapshot;
+2. the resulting state and public exports are validated, then SQLite is checkpointed and published as a verified durable snapshot;
 3. the owned README projection is proposed through the scoped automation pull request;
 4. after review and merge, deployment-only automation restores the reviewed durable state, regenerates the public exports, and validates every projection against `main`;
 5. the production SQLite file and generated downloads are checksum-verified and replaced in the shared host state directory.
@@ -290,7 +290,7 @@ Workflow orchestration belongs to [Automation](../operations/automation.md), and
 
 ## Privacy and browser integrations
 
-The canonical production layout loads the hosted Umami analytics script from `https://cloud.umami.is/script.js`, sends analytics events to `https://gateway.umami.is`, and restricts collection to `opportunities2027.simonesiega.com`. The production Content Security Policy permits only those distinct script and connection origins. The script is rendered only when `NODE_ENV` is `production` and the configured `SITE_URL` hostname is that canonical domain, so it is absent from development, tests, and noncanonical deployments. This third-party browser integration must remain within privacy and security review.
+The canonical production layout loads the hosted Umami analytics script from `https://cloud.umami.is/script.js`, sends analytics events to `https://gateway.umami.is`, and restricts collection to `opportunities2027.simonesiega.com`. The production Content Security Policy permits only those distinct script and connection origins. The script is rendered only when `NODE_ENV` is `production` and the configured `SITE_URL` hostname is that canonical domain, so it is absent from development, tests, and noncanonical deployments. The project-wide disclosure of infrastructure processing, analytics fields, local browser storage, external links, retention, and visitor choices is in [`PRIVACY.md`](../../../PRIVACY.md). This third-party browser integration must remain within privacy and security review.
 
 The directory itself requires no:
 

@@ -1,6 +1,6 @@
 # Contributing to European Tech Opportunities 2027
 
-[← Project README](README.md) · [Documentation hub](docs/README.md) · [Security policy](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
+[← Project README](README.md) · [Documentation hub](docs/README.md) · [Security policy](SECURITY.md) · [Privacy notice](PRIVACY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
 
 Thank you for contributing. This file is the contributor entry point; detailed setup, architecture, operation, and feature behavior live in the linked canonical guides.
 

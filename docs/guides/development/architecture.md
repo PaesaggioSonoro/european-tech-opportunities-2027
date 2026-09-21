@@ -25,7 +25,7 @@ The architecture is intentionally narrow:
 
 - one LinkedIn guest-HTML source adapter;
 - one deterministic classification pipeline;
-- one canonical SQLite state store;
+- one SQLite lifecycle store;
 - one controlled application writer;
 - three read-only public projections.
 
@@ -120,7 +120,7 @@ For each enabled search, the pipeline:
 8. records explicit detail-page unavailability separately from search absence;
 9. returns one isolated outcome for persistence.
 
-Overlapping searches may discover the same job. The numeric LinkedIn ID keeps the listing canonical, while provenance remains associated with every search that found it.
+Overlapping searches may discover the same job. The numeric LinkedIn ID deduplicates the listing, while provenance remains associated with every search that found it.
 
 Classification checks require evidence for:
 
@@ -130,7 +130,7 @@ Classification checks require evidence for:
 - cycle evidence: the explicit target cycle, or no conflicting cycle year with resolved posting-date evidence on or after May 1, 2026 as the yearless fallback;
 - a European location.
 
-Graduation-year eligibility language is not internship-cycle evidence. For title-explicit New Grad roles, a title or contextual opportunity year identifies the hiring cycle, so explicit 2025 or 2026 roles are rejected. A listing with explicit target-cycle evidence does not require posting-age metadata; a yearless listing does. Known canonical jobs may be rechecked without treating missing current posting-age metadata as closure evidence. Malformed or ambiguous candidates are excluded without failing unrelated candidates.
+Graduation-year eligibility language is not internship-cycle evidence. For title-explicit New Grad roles, a title or contextual opportunity year identifies the hiring cycle, so explicit 2025 or 2026 roles are rejected. A listing with target-cycle evidence does not require posting-age metadata; a yearless listing does. Known jobs may be rechecked without treating missing current posting-age metadata as closure evidence. Malformed or ambiguous candidates are excluded without failing unrelated candidates.
 
 Search schema and pagination rules are documented in the [search registry guide](../user-guide/search-registry.md).
 
@@ -186,7 +186,7 @@ Schema, transactions, provenance, closure, migrations, backup, and restore are o
 
 ## Public projections
 
-Canonical SQLite state feeds exactly three read-only public projections.
+SQLite state feeds exactly three read-only public projections.
 
 ### Website
 
@@ -211,7 +211,7 @@ The renderer creates a deterministic bounded projection containing:
 
 The renderer owns the marked opportunity-count and opportunity-preview regions and replaces the resulting README atomically. Validation reconstructs both expected regions from SQLite and requires exact equality.
 
-The README cannot reconstruct canonical state because it omits most jobs, closed state, provenance, run history, and closure evidence.
+The README cannot reconstruct lifecycle state because it omits most jobs, closed state, provenance, run history, and closure evidence.
 
 ### Public CSV and JSON exports
 
@@ -225,7 +225,7 @@ The pipeline atomically generates `open-opportunities.csv` and `open-opportuniti
 
 The exports deliberately omit status, posting and observation timestamps, provenance, search runs, closure evidence, diagnostics, and every other lifecycle or operational field. CSV text that could be interpreted as a spreadsheet formula is neutralized. The website serves the generated files as attachments through fixed read-only routes; it does not generate or mutate export data.
 
-Exports are disposable projections, not canonical state. They can be regenerated from SQLite and must never be used to restore lifecycle history.
+Exports are disposable projections. They can be regenerated from SQLite and must never be used to restore lifecycle history.
 
 ## Dependency direction
 

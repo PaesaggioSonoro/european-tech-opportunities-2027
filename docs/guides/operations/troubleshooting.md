@@ -2,7 +2,7 @@
 
 [← Documentation hub](../../README.md) · [CLI reference](../user-guide/cli.md) · [Database lifecycle](database.md) · [Automation](automation.md) · [Docker and deployment](docker.md) · [Security policy](../../../SECURITY.md)
 
-This is the canonical troubleshooting guide for the project. Start with the command’s exit code and first sanitized error, and preserve canonical state before making changes.
+This is the canonical troubleshooting guide for the project. Start with the command’s exit code and first sanitized error, and preserve state before making changes.
 
 Do not delete SQLite, weaken classification rules, increase collection limits blindly, or bypass authorization as a shortcut.
 
@@ -139,7 +139,7 @@ When the error remains, confirm both commands use the same `OPPORTUNITIES_DATABA
 uv run python scripts/check_migrations.py
 ```
 
-Back up canonical state before repair. Do not delete the database as the first response.
+Back up the database before repair. Do not delete it as the first response.
 
 ### Migration consistency or timestamp failure
 
@@ -158,7 +158,7 @@ Schema, migration, backup, and restore procedures are canonical in [Database lif
 
 ### SQLite lock or concurrent-writer error
 
-The supported model allows one canonical writer.
+The supported model allows one writer.
 
 Typical causes:
 
@@ -176,7 +176,7 @@ Stop the additional writer, preserve the current database and sidecars, and retu
 
 The root README must contain exactly one opening and one closing marker for each generated region: opportunity counts and opportunity previews.
 
-Only when the database contains representative canonical state, run:
+Only when the database contains representative state, run:
 
 ```bash
 uv run opportunities render
@@ -190,7 +190,7 @@ The generated regions contain:
 - the public website link;
 - at most five internships and five New Grad opportunities.
 
-Do not edit generated counts, timestamps, or rows manually; fix canonical state or the renderer instead.
+Do not edit generated counts, timestamps, or rows manually; fix the database state or renderer instead.
 
 When mismatch remains, verify:
 
@@ -202,7 +202,7 @@ When mismatch remains, verify:
 
 ### Public export is missing or stale
 
-Regenerate only the sanitized downloads from migrated canonical state:
+Regenerate only the sanitized downloads from migrated state:
 
 ```bash
 uv run opportunities export-public
@@ -284,7 +284,7 @@ Exit code `1` usually indicates a shared problem involving:
 - parser behavior;
 - configuration.
 
-Existing canonical state remains valid. Preserve it while diagnosing the shared cause.
+Existing state remains valid. Preserve it while diagnosing the shared cause.
 
 ### HTTP `429`, timeout, or `5xx`
 
@@ -439,7 +439,7 @@ Canonical SQLite is never stored in GitHub Actions cache or artifacts. When rest
 
 During initial rollout, if `latest.json` is absent and the snapshot directory is empty, the workflow may seed from the reviewed live VPS database after independent integrity, foreign-key, required-table, and Alembic-revision checks. If timestamped snapshots exist but the pointer is missing, automation stops so the pointer can be recovered instead of starting an unrelated history.
 
-The README and sanitized projection artifacts cannot reconstruct canonical state.
+The README and sanitized projection artifacts cannot reconstruct lifecycle state.
 
 ### VPS snapshot restore or publication fails
 

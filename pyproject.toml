@@ -4,13 +4,16 @@ version = "0.1.0"
 description = "Pipeline for 2027 European technology internships and new-grad roles"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "European Tech Opportunities contributors" }]
 keywords = ["internships", "new-grad", "europe", "data-pipeline", "scraping"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Typing :: Typed",
 ]
 dependencies = [
@@ -26,6 +29,8 @@ dependencies = [
 ]
 
 [project.urls]
+Homepage = "https://opportunities2027.simonesiega.com"
+Documentation = "https://github.com/simonesiega/european-tech-opportunities-2027/tree/main/docs"
 Repository = "https://github.com/simonesiega/european-tech-opportunities-2027"
 Issues = "https://github.com/simonesiega/european-tech-opportunities-2027/issues"
 
@@ -46,6 +51,16 @@ dev = [
 [build-system]
 requires = ["hatchling==1.32.0"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src/opportunities",
+  "/configs",
+  "/migrations",
+  "/alembic.ini",
+  "/LICENSE",
+  "/README.md",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/opportunities"]

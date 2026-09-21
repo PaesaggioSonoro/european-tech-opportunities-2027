@@ -17,6 +17,7 @@ Docker does not change the authorization, lifecycle, or one-writer contracts.
 - [Dokploy deployment](#dokploy-deployment)
 - [Volume permissions](#volume-permissions)
 - [Run without Compose](#run-without-compose)
+- [Application release and rollback](#application-release-and-rollback)
 - [Production maintenance](#production-maintenance)
 - [Troubleshooting](#troubleshooting)
 
@@ -127,7 +128,7 @@ docker compose ps
 docker compose logs site
 ```
 
-The default Compose configuration exposes port `3000` only to the Compose network; it does not publish a fixed host port.
+The default Compose configuration uses `SITE_URL=http://localhost:3000`, which keeps production-only analytics disabled, and exposes port `3000` only to the Compose network; it does not publish a fixed host port. Production must explicitly override `SITE_URL` with the canonical HTTPS origin.
 
 For direct browser access during local development:
 
@@ -308,6 +309,31 @@ docker run --rm \
 Reuse the same mounts for other pipeline commands.
 
 A named volume survives `--rm`, but this standalone example is separate from the supported production host-bind topology and remains operational state rather than a backup. Backup and restore procedures belong to [Database lifecycle](database.md#backup).
+
+## Application release and rollback
+
+An application release changes the container image or Compose configuration. It is separate from the deployment-only canonical-state workflow, which replaces the reviewed database and public exports without rebuilding the website.
+
+Before releasing an application revision:
+
+1. start from a clean `main` checkout and record the commit SHA;
+2. confirm Python, website, CodeQL, and Docker CI succeeded for that exact SHA;
+3. confirm dependency and lockfile changes are intentional and reviewed;
+4. verify `docker compose config`, both image builds, the CLI image entry point, the migrated read-only website smoke test, public downloads, and production security headers;
+5. confirm the current database has a round-trip-verified durable snapshot and no canonical writer or deployment is active;
+6. retain the previously working image or deployment revision for application rollback.
+
+Release through the configured Dokploy project without changing the persistent host-state path or making the site mount writable. The application release must not initialize, replace, or downgrade canonical SQLite as a side effect.
+
+After deployment, verify over HTTPS:
+
+- the directory returns `200`, displays the expected count and last successful collection time, and supports filtering and pagination;
+- `/robots.txt`, `/sitemap.xml`, `/open-opportunities.csv`, and `/open-opportunities.json` return the expected content and attachment headers;
+- Content Security Policy, HSTS, content-type, framing, referrer, cross-origin, and permissions headers remain present;
+- the site container is healthy, runs as UID/GID `10001:10001`, and can read but not write the mounted state;
+- startup and request logs contain no secrets, paths, stack traces, database rows, or repeated errors.
+
+If the application is unhealthy, roll back to the recorded prior image or deployment revision while preserving the host state directory. Do not roll back, delete, or recreate SQLite merely to match an older image. If the older image cannot read the current schema, stop the release and follow the verified database recovery and migration procedures rather than improvising a downgrade. Canonical-state rollback is a separate, evidence-preserving recovery decision documented in [Database lifecycle](database.md#restore).
 
 ## Production maintenance
 

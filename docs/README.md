@@ -1,6 +1,6 @@
 # European Tech Opportunities 2027 Documentation
 
-[← Project README](../README.md) · [Contributing](../CONTRIBUTING.md) · [Security policy](../SECURITY.md) · [Open the opportunity directory](https://opportunities2027.simonesiega.com/)
+[← Project README](../README.md) · [Contributing](../CONTRIBUTING.md) · [Security policy](../SECURITY.md) · [Privacy notice](../PRIVACY.md) · [Open the opportunity directory](https://opportunities2027.simonesiega.com/)
 
 The live website is the primary interface for browsing opportunities. This documentation is the canonical reference for setup, CLI usage, search configuration, production operation, architecture, development, and project policies.
 
@@ -49,6 +49,7 @@ The live website is the primary interface for browsing opportunities. This docum
 |---|---|
 | [Contributing](../CONTRIBUTING.md) | Contributor workflow, coding expectations, validation, documentation rules, and pull-request requirements. |
 | [Security policy](../SECURITY.md) | Vulnerability reporting, source-access boundaries, trust boundaries, secrets, and safe operation. |
+| [Privacy notice](../PRIVACY.md) | Website infrastructure, analytics, browser storage, external services, and visitor choices. |
 | [Code of Conduct](../CODE_OF_CONDUCT.md) | Community standards, conduct reporting, and enforcement. |
 
 ## Visual assets

@@ -61,7 +61,9 @@ def test_readme_contains_type_sections_and_escapes_values(tmp_path: Path) -> Non
         encoding="utf-8",
     )
     render_readme(readme, [job], metadata)
-    assert "old" not in readme.read_text(encoding="utf-8")
+    rendered = readme.read_text(encoding="utf-8")
+    assert "old" not in rendered
+    assert "Last successful collection: July 15, 2026 at 00:00 UTC" in rendered
     assert validate_readme(readme) == []
     assert validate_readme(readme, [job], metadata) == []
 

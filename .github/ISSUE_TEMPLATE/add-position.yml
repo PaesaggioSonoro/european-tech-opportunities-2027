@@ -45,11 +45,9 @@ body:
   - type: input
     id: posted-date
     attributes:
-      label: Posting date
-      description: Provide the date displayed by LinkedIn. Eligible listings must have been posted on or after May 1, 2026.
-      placeholder: YYYY-MM-DD
-    validations:
-      required: true
+      label: Posting date or relative age
+      description: Required only when the listing does not explicitly identify the 2027 cycle. Provide the date or relative age displayed by LinkedIn; yearless listings must resolve to May 1, 2026 or later.
+      placeholder: YYYY-MM-DD or “3 days ago”
 
   - type: input
     id: application-url

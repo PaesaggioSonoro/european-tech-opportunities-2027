@@ -44,7 +44,8 @@ export function SiteFooter({lastUpdatedAt}: SiteFooterProps) {
           </a>
         </nav>
         <span>
-          Last updated: {lastUpdatedAt ? formatPublishedDate(lastUpdatedAt) : "Not available"}
+          Last successful collection:{" "}
+          {lastUpdatedAt ? formatPublishedDate(lastUpdatedAt) : "Not available"}
         </span>
       </div>
     </footer>

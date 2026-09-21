@@ -1,6 +1,6 @@
 # Security Policy
 
-[← Project README](README.md) · [Contributing](CONTRIBUTING.md) · [Documentation hub](docs/README.md)
+[← Project README](README.md) · [Contributing](CONTRIBUTING.md) · [Documentation hub](docs/README.md) · [Privacy notice](PRIVACY.md)
 
 Security reporting, supported versions, and operating boundaries for European Tech Opportunities 2027.
 
@@ -34,7 +34,7 @@ Response time depends on severity and reproducibility; no service-level agreemen
 
 ## Supported versions
 
-Security fixes target `main` and, when practical, the latest published release. Older releases and commits receive best-effort support only.
+Security fixes currently target `main`. The project has no published versioned release; historical commits are not maintained as separate support lines.
 
 ## Security boundaries
 

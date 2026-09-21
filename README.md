@@ -8,7 +8,8 @@
   <a href="#latest-internships">Internships</a> ·
   <a href="#latest-new-grad-opportunities">New Grad</a> ·
   <a href="docs/README.md">Documentation</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="PRIVACY.md">Privacy</a>
 </p>
 
 <p align="center">
@@ -28,7 +29,7 @@
 
 <!-- BEGIN OPPORTUNITY COUNTS -->
 <p align="center">
-  <strong>Last updated: September 20, 2026 at 10:49 UTC</strong><br>
+  <strong>Last successful collection: September 20, 2026 at 10:49 UTC</strong><br>
   <img src="https://img.shields.io/badge/Total%20opportunities-701-2563eb?style=for-the-badge" alt="Total opportunities: 701" />
   <img src="https://img.shields.io/badge/Internships-319-16a34a?style=for-the-badge" alt="Internships: 319" />
   <img src="https://img.shields.io/badge/New%20Grad-382-9333ea?style=for-the-badge" alt="New Grad opportunities: 382" />
@@ -138,14 +139,13 @@ See the [architecture guide](docs/guides/development/architecture.md) for the co
 
 ## Publication rules
 
-A listing is published only when all six checks pass:
+A listing is published only when all five checks pass:
 
 | Check | Required evidence |
 |---|---|
 | Employment type | The title explicitly identifies either an internship (including placement or co-op) or a New Grad role. Internship terminology takes precedence if both appear. |
-| Posting date | For a listing without an explicit cycle year, LinkedIn’s relative posting age must resolve to May 1, 2026 or later. An explicit `2027` listing does not require posting-age metadata. |
+| Cycle evidence | Explicit `2027` evidence is accepted, and any explicit conflicting cycle year is rejected. A listing with no explicit cycle year can qualify only when LinkedIn’s relative posting age resolves to May 1, 2026 or later. Graduation-year eligibility alone is ignored for internships. |
 | Seniority | The title contains no configured senior-level or management terminology. |
-| 2027 cycle | Explicit `2027` evidence is accepted; an otherwise eligible listing with no explicit cycle year is accepted when posted on or after May 1, 2026, while any explicit conflicting cycle year, including 2025 or 2026, is rejected. Graduation-year eligibility alone is ignored for internships. |
 | Technology role | The title, or a narrowly allowed description fallback, matches a configured technology category. |
 | European location | The parsed location explicitly resolves to Europe or a supported European country. |
 
@@ -200,13 +200,14 @@ Use the [documentation hub](docs/README.md) to find the canonical guide for each
 | Using the project | [Website](docs/guides/user-guide/website.md) · [CLI](docs/guides/user-guide/cli.md) · [Search registry](docs/guides/user-guide/search-registry.md) |
 | Production operation | [Automation](docs/guides/operations/automation.md) · [Database](docs/guides/operations/database.md) · [Docker](docs/guides/operations/docker.md) · [Troubleshooting](docs/guides/operations/troubleshooting.md) |
 | Development | [Architecture](docs/guides/development/architecture.md) · [Development](docs/guides/development/development.md) · [Contributing](CONTRIBUTING.md) |
+| Policies | [Security](SECURITY.md) · [Privacy](PRIVACY.md) · [Code of Conduct](CODE_OF_CONDUCT.md) |
 
 ## Responsible operation
 
 > [!IMPORTANT]
 > LinkedIn collection is disabled by default. Public accessibility is not authorization to automate access.
 
-The project uses no credentials, authenticated sessions, browser automation, private endpoints, proxies, CAPTCHA bypasses, or anti-bot evasion. It is not affiliated with or endorsed by LinkedIn or any listed employer. See [`SECURITY.md`](SECURITY.md) for the complete source-access and operational policy.
+The project uses no credentials, authenticated sessions, browser automation, private endpoints, proxies, CAPTCHA bypasses, or anti-bot evasion. It is not affiliated with or endorsed by LinkedIn or any listed employer. See [`SECURITY.md`](SECURITY.md) for the complete source-access and operational policy and [`PRIVACY.md`](PRIVACY.md) for website analytics and visitor-data handling.
 
 ## Contributing
 

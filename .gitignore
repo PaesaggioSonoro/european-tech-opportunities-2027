@@ -9,6 +9,7 @@ dist/
 .pytest_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 .benchmarks/
 htmlcov/
 quality-reports/
@@ -38,12 +39,19 @@ site/tests/e2e/.tmp/
 .pypirc
 *.key
 *.pem
+*.p12
+*.pfx
 configs/settings.yml
+configs/settings.*.yml
+!configs/settings.example.yml
 
 # Runtime state
-data/*.db
-data/*.db-*
-data/*.sqlite*
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
 data/exports/
 *.log
 

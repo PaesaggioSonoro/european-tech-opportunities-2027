@@ -91,7 +91,7 @@ def opportunity_count_cards(
     )
     return (
         '<p align="center">\n'
-        f"  <strong>Last updated: {updated_text}</strong><br>\n"
+        f"  <strong>Last successful collection: {updated_text}</strong><br>\n"
         '  <img src="https://img.shields.io/badge/Total%20opportunities-'
         f'{total}-2563eb?style=for-the-badge" alt="Total opportunities: {total}" />\n'
         '  <img src="https://img.shields.io/badge/Internships-'

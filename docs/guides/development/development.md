@@ -25,6 +25,8 @@ This is the canonical development guide for the project. It covers the local eng
 - Node.js 22.13 or newer with unflagged `node:sqlite` support, Bun 1.3.14, strict TypeScript, Tailwind CSS 4, ESLint, Prettier, and Next.js 16;
 - GNU Make for optional command shortcuts, and Docker for container and production-path validation.
 
+These versions define the supported local and CI development environment. Container build and runtime versions are pinned independently; the [Docker guide](../operations/docker.md#image-targets) and root `Dockerfile` are authoritative for container versions.
+
 Install the locked dependencies:
 
 ```bash
@@ -52,6 +54,7 @@ Normal tests and builds require no LinkedIn access. First-time setup belongs in 
 ├── src/opportunities/       # Python package
 ├── tests/                   # unit, integration, and fixtures
 ├── CONTRIBUTING.md           # contributor workflow and project contracts
+├── PRIVACY.md                # website visitor-data and analytics disclosure
 ├── SECURITY.md               # security reporting and trust boundaries
 ├── Makefile                  # development and validation shortcuts
 ├── README.md                 # public project overview and generated previews

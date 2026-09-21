@@ -109,11 +109,12 @@ Keep these non-secret values as repository variables:
 
 Repository configuration must also:
 
-1. permit GitHub Actions to create pull requests;
-2. enable pull-request auto-merge;
+1. set the default `GITHUB_TOKEN` permission to read-only, permit GitHub Actions to create pull requests, and keep elevated permissions explicit at job boundaries;
+2. require third-party Actions to use full-length commit SHAs and enable pull-request auto-merge;
 3. protect `main` and require the check contexts emitted by the current workflows: `ruff`, `python`, `site`, `docker`, `Analyze (Python)`, and `Analyze (TypeScript)`;
 4. prevent direct pushes and choose the review policy deliberately—if an approving review is required, the nightly pull request waits for that human review before auto-merge;
-5. retain Actions logs and the documented 30-day sanitized projection artifacts according to repository policy.
+5. enable the dependency graph, Dependabot alerts, secret scanning and push protection, private vulnerability reporting, and CodeQL code scanning where GitHub makes those controls available;
+6. retain Actions logs and the documented 30-day sanitized projection artifacts according to repository policy.
 
 The environment branch rules are part of the security boundary, not optional documentation. Both reusable workflows also fail explicitly when `github.ref` is not `refs/heads/main`, including the repository-mutation boundary that does not receive environment secrets.
 
@@ -126,8 +127,9 @@ Complete this once before relying on the scheduled run:
 3. configure the repository variables and verify that `LINKEDIN_CRAWL_AUTHORIZED=true` reflects current express authorization rather than convenience;
 4. enable Actions pull-request creation, auto-merge, branch protection, and all six required check contexts;
 5. run **Verify canonical state recovery** from `main`; require successful migration, projection validation, round-trip snapshot verification, and the retained sanitized projection artifact;
-6. confirm no local or VPS collector can write the same database and no stale operational workflow is still running or queued;
-7. confirm **Nightly full update** is enabled and the repository is active enough for GitHub scheduled workflows.
+6. only after that verified durable snapshot exists, delete every legacy `opportunities-db-*` Actions cache and legacy `opportunities-state-*` or `opportunities-nightly-state-*` artifact; these older state bundles are neither approved backups nor safe public artifacts;
+7. confirm no local or VPS collector can write the same database and no stale operational workflow is still running or queued;
+8. confirm **Nightly full update** is enabled and the repository is active enough for GitHub scheduled workflows.
 
 Do not use a live scrape as the first test of SSH, environment, snapshot, or branch-protection configuration. The recovery drill exercises those paths without LinkedIn access.
 
@@ -161,7 +163,7 @@ concurrency:
 
 The nominal scheduled time is 04:23 UTC. It completes the availability audit before starting the scrape. GitHub Actions may start scheduled jobs later than the configured time.
 
-The nightly, scrape-only, availability-only, recovery-drill, and deployment paths share `opportunity-collection`. This prevents overlapping canonical writers and state replacement while allowing the read-only website to continue serving requests.
+The nightly, scrape-only, availability-only, recovery-drill, and deployment paths share `opportunity-collection`. This prevents overlapping writers and state replacement while allowing the read-only website to continue serving requests.
 
 ## Manual collection inputs
 
@@ -245,7 +247,7 @@ replace canonical database + public exports
 </pre>
 </div>
 
-The explicit deployment mode and README validation prevent newly collected state from being deployed before its README projection has been reviewed and merged. Keeping restore, validation, snapshot publication, and deployment in one approved `production` job avoids exposing canonical state through cross-job storage.
+The deployment mode and README validation prevent newly collected state from being deployed before its README projection has been reviewed and merged. Keeping restore, validation, snapshot publication, and deployment in one approved `production` job avoids exposing the database through cross-job storage.
 
 ## Exit-code handling
 
@@ -275,9 +277,9 @@ After validation and WAL checkpointing, publication creates a consistent SQLite 
 
 Every strict JSON manifest records the database path, byte size, SHA-256, Alembic revision, collection and creation timestamps, preceding database and manifest references, workflow source, and retention metadata.
 
-Publication uploads new paths, downloads both files into a clean directory, verifies SQLite and application readability, and only then atomically renames a temporary `latest.json`. The canonical working and deployment copies are byte-identical to the verified download. A failed transfer or verification leaves the prior pointer in place. The restricted account has no shell, sudo, forwarding, application-database access, or membership in `opportunities-site`.
+Publication uploads new paths, downloads both files into a clean directory, verifies SQLite and application readability, and only then atomically renames a temporary `latest.json`. The working and deployment copies are byte-identical to the verified download. A failed transfer or verification leaves the prior pointer in place. The restricted account has no shell, sudo, forwarding, application-database access, or membership in `opportunities-site`.
 
-Thirty-day GitHub artifacts contain only `README.md` and the sanitized CSV/JSON exports; they are verification outputs, not recovery sources. No production database or manifest is uploaded to Actions cache or artifacts. By default, VPS manifests declare a 365-day retention window; automation does not delete older snapshots. Capacity must be monitored and expiry reviewed manually after `retain_until`. Because snapshot storage is on the same VPS as production, it protects against accidental database replacement but not complete VPS, disk, or provider loss. Replication of encrypted or access-controlled snapshots to an independent host remains the recommended next durability layer.
+Thirty-day GitHub artifacts contain only `README.md` and the sanitized CSV/JSON exports; they are verification outputs, not recovery sources. No production database or manifest is uploaded to Actions cache or artifacts. Repositories upgrading from an older cache/artifact state handoff must purge legacy `opportunities-db-*`, `opportunities-state-*`, and `opportunities-nightly-state-*` objects after the first restricted snapshot has passed the recovery drill. By default, VPS manifests declare a 365-day retention window; automation does not delete older snapshots. Capacity must be monitored and expiry reviewed manually after `retain_until`. Because snapshot storage is on the same VPS as production, it protects against accidental database replacement but not complete VPS, disk, or provider loss. Replication of encrypted or access-controlled snapshots to an independent host remains the recommended next durability layer.
 
 Canonical backup, sidecar, migration, and restoration rules belong to the [database lifecycle guide](database.md).
 
@@ -314,7 +316,7 @@ automated/scrape-update        # manually requested scrape only
 
 Only `README.md` is committed. SQLite state is never committed. Canonical processing uploads a one-day README-only handoff, then a separate job with `actions: write`, `contents: write`, and `pull-requests: write` downloads that file and performs the GitHub mutation and validation dispatch. Processing retains only `contents: read`; the mutation job receives no VPS credentials or state bundle.
 
-The generated preview remains bounded to five recently discovered open opportunities per employment type, regardless of the size of canonical state.
+The generated preview remains bounded to five recently discovered open opportunities per employment type, regardless of database size.
 
 The nightly workflow creates or updates its fixed branch and requests a squash auto-merge. Before mutating an existing proposal, and again before dispatching validation or requesting auto-merge, it verifies the exact base branch, head branch, title, and changed-file list; the pull request must target `main` and modify only `README.md`. It retries the post-push GitHub scope read briefly to tolerate API propagation, but never relaxes the expected scope. It then waits for the exact Python, site, Docker, and CodeQL dispatch runs on that head SHA to succeed before requesting auto-merge. If generated state already matches `main`, a matching stale automation pull request is closed rather than left eligible to merge. GitHub auto-merge must be enabled; required checks, up-to-date-branch rules, and review requirements remain recommended defense in depth. Scrape-only and availability-only pull requests receive the same dispatched validation but remain manual-review paths.
 
@@ -332,7 +334,7 @@ Use this sequence after each scheduled collection. Do not deploy merely because 
 6. From the Actions tab, run **Scrape jobs or deploy reviewed state** on `main` with `deploy_to_vps=true`. Set `open_pull_request=false`; that input is unused in deployment mode but makes operator intent explicit.
 7. Approve the `production` environment deployment if required. Confirm **Validate, preserve, and deploy reviewed state** restores and validates the matching state before its final deployment step. A README/database mismatch is a safety stop, usually meaning the matching projection was not merged or a newer snapshot exists.
 8. Confirm checksum verification, lock acquisition, previous-database preservation, each atomic file replacement, and final checksum verification completed in the deployment log. Never print secrets or database rows while reviewing logs.
-9. Verify the live directory and both fixed downloads over HTTPS. Check that the visible counts and update time match `main`, filtering and pagination still work, and CSV/JSON downloads return the expected attachment filenames.
+9. Verify the live directory and both fixed downloads over HTTPS. Check that the visible counts and last successful collection time match `main`, filtering and pagination still work, and CSV/JSON downloads return the expected attachment filenames.
 10. Keep the nightly and deployment run IDs for the operational record. If authorization will not remain valid for the next scheduled run, immediately set `LINKEDIN_CRAWL_AUTHORIZED=false` or remove the variable.
 
 If any step before deployment fails, leave production unchanged and diagnose the failed stage. If deployment fails, do not collect again as a repair strategy; inspect the checksum/lock error and use the verified snapshot or `opportunities.db.previous` recovery path when replacement may have started.
@@ -383,7 +385,7 @@ uv run opportunities db-upgrade
 
 A migration, integrity, manifest, or canonical-state validation failure stops the workflow. Collection workflows do not expose a state-rebuild input and never delete restored state to recover automatically.
 
-Preserve the failed state, then review durable snapshot history and manifests followed by the previous VPS canonical file. Sanitized projection artifacts cannot restore lifecycle state. Restore a verified compatible snapshot rather than initializing an unrelated empty history. Any intentional rebuild is an exceptional manual recovery decision because it loses original first-seen history, search provenance, closure confirmations, and run diagnostics. Follow [Database lifecycle](database.md#restore) and [Troubleshooting](troubleshooting.md#github-actions-and-deployment).
+Preserve the failed state, then review durable snapshot history and manifests followed by the previous VPS database. Sanitized projection artifacts cannot restore lifecycle state. Restore a verified compatible snapshot rather than initializing an unrelated empty history. Any intentional rebuild is an exceptional manual recovery decision because it loses original first-seen history, search provenance, closure confirmations, and run diagnostics. Follow [Database lifecycle](database.md#restore) and [Troubleshooting](troubleshooting.md#github-actions-and-deployment).
 
 ## Disabling collection
 

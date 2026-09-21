@@ -10,7 +10,7 @@ This is the canonical installation guide for the project. It covers local instal
 
 | Tool | Version | Required for |
 |---|---:|---|
-| Python | 3.12+ | Pipeline, CLI, tests, and migrations |
+| Python | 3.12+ (CI baseline: 3.12) | Pipeline, CLI, tests, and migrations |
 | `uv` | 0.11.6 recommended | Locked Python environment and commands |
 | Git | Current supported release | Repository checkout |
 | Node.js | 22.13+ | Website builds and production-style local startup with unflagged `node:sqlite` support |

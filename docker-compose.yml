@@ -35,11 +35,11 @@ services:
       context: .
       target: site
       args:
-        SITE_URL: "${SITE_URL:-https://opportunities2027.simonesiega.com}"
+        SITE_URL: "${SITE_URL:-http://localhost:3000}"
     image: european-tech-opportunities-2027-site:local
 
     environment:
-      SITE_URL: "${SITE_URL:-https://opportunities2027.simonesiega.com}"
+      SITE_URL: "${SITE_URL:-http://localhost:3000}"
       OPPORTUNITIES_DATABASE_PATH: /app/data/opportunities.db
       OPPORTUNITIES_PUBLIC_EXPORT_DIR: /app/data/exports
 

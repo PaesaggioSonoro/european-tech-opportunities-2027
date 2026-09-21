@@ -194,7 +194,7 @@ anything else                                          → preserve the job as i
 
 The auditor collects every outcome before applying confirmed changes in one transaction. Rate limits, authentication failures, redirects, server errors, invalid content, and transport failures never become deletion evidence. Search and run history remain available after a job deletion.
 
-The README is regenerated after the transaction. The nightly workflow includes the audit result in its combined, README-only pull request, explicitly dispatches and awaits validation on that generated commit, and requests auto-merge only after the exact-scope check and successful runs. A manual availability-only run uses a separate validated, manual-review pull request. SQLite itself remains canonical runtime state and is not committed to Git.
+The README is regenerated after the transaction. The nightly workflow includes the audit result in its combined, README-only pull request, dispatches and awaits validation on that generated commit, and requests auto-merge only after the exact-scope check and successful runs. A manual availability-only run uses a separate validated, manual-review pull request. SQLite remains the runtime source of truth and is not committed to Git.
 
 ## Timestamp invariants
 
@@ -218,7 +218,7 @@ last_seen_at >= first_seen_at
 
 ## One-writer model
 
-Only one collection or maintenance process may write canonical state at a time.
+Only one collection or maintenance process may write the database at a time.
 
 Supported concurrent access:
 
@@ -227,7 +227,7 @@ Supported concurrent access:
 
 GitHub collection workflows share a concurrency group to preserve this model.
 
-Do not run an independent local or VPS collector against the same canonical file.
+Do not run an independent local or VPS collector against the same file.
 
 The website must open SQLite in read-only mode and must never run migrations or lifecycle mutations.
 
@@ -271,7 +271,7 @@ When SQLite may still be open, use the backup API:
 uv run python -c "import sqlite3; s=sqlite3.connect('data/opportunities.db'); d=sqlite3.connect('data/opportunities.backup.db'); s.backup(d); d.close(); s.close()"
 ```
 
-Store backups outside normal repository cleanup paths and treat verified durable snapshots as the preferred recovery source for canonical production state.
+Store backups outside normal repository cleanup paths and treat verified durable snapshots as the preferred recovery source for production state.
 
 For a cold filesystem copy:
 
@@ -305,7 +305,7 @@ uv run python scripts/canonical_snapshot.py verify \
   --manifest /safe/recovery/manifest.json
 ```
 
-7. Restore the verified database atomically; do not replace canonical state with unverified bytes.
+7. Restore the verified database atomically; do not replace state with unverified bytes.
 8. Remove stale sidecars only while no SQLite connection is open.
 9. Run:
 
@@ -321,13 +321,13 @@ uv run opportunities render
 uv run opportunities validate
 ```
 
-A fresh rebuild loses lifecycle history. Do not delete canonical state as the first response to migration, locking, or integrity problems.
+A fresh rebuild loses lifecycle history. Do not delete the database as the first response to migration, locking, or integrity problems.
 
 For symptom-based diagnosis before destructive recovery, use [Troubleshooting](troubleshooting.md#database-and-migration-failures).
 
 ## Projection consistency
 
-SQLite remains canonical even though the project exposes three read-only public projections.
+SQLite remains the source of truth even though the project exposes three read-only public projections.
 
 ### Website
 
@@ -355,7 +355,7 @@ The renderer owns the marked opportunity-count and opportunity-preview regions a
 
 `validate` rebuilds both expected regions in memory and requires exact equality with the committed projection.
 
-Never reconstruct canonical state from the README. It omits:
+Never reconstruct lifecycle state from the README. It omits:
 
 - closed jobs;
 - most open jobs;
@@ -370,7 +370,7 @@ Manual edits inside the generated regions are overwritten.
 
 The pipeline generates `open-opportunities.csv` and `open-opportunities.json` from the same currently open rows. Only the approved public export fields are serialized: LinkedIn job ID, company, title, location, listing URL, category, industries, employment type, and start date.
 
-The files exclude job status, all timestamps, provenance, search runs, closure confirmations, diagnostics, and other lifecycle or operational state. They are validated against SQLite, atomically replaced, and deployed beside the database for read-only website delivery. They are disposable projections and cannot restore canonical state.
+The files exclude job status, all timestamps, provenance, search runs, closure confirmations, diagnostics, and other lifecycle or operational state. They are validated against SQLite, atomically replaced, and deployed beside the database for read-only website delivery. They are disposable projections and cannot restore lifecycle history.
 
 ## Data handling
 
