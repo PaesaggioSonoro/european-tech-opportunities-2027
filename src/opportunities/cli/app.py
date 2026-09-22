@@ -22,7 +22,7 @@ from opportunities.config.search_registry import (
 )
 from opportunities.config.settings import Settings, apply_search_overrides, load_settings
 from opportunities.database.migrations import migration_head, upgrade_database
-from opportunities.database.repository import Repository, SearchHealth
+from opportunities.database.repository import PersistSummary, Repository, SearchHealth
 from opportunities.database.session import (
     create_database_engine,
     create_session_factory,
@@ -208,7 +208,7 @@ def add_job(
         except (OSError, ValueError, ValidationError) as exc:
             error_console.print(f"[red]Add job failed:[/red] {exc}")
             raise typer.Exit(2) from exc
-        action = "added" if summary.new else "updated"
+        action = _manual_job_action(summary)
         console.print(f"Job {job.linkedin_job_id} {action}.")
     finally:
         _dispose_engine(engine)
@@ -389,6 +389,19 @@ def _parse_iso_timestamp(value: str) -> datetime:
     except ValueError as exc:
         raise ValueError("posted_at must be a valid ISO-8601 timestamp") from exc
     return ensure_utc(parsed)
+
+
+def _manual_job_action(summary: PersistSummary) -> str:
+    """Describe the exact outcome of one manual job upsert."""
+    if summary.new:
+        return "added"
+    if summary.updated and summary.reopened:
+        return "updated and reopened"
+    if summary.updated:
+        return "updated"
+    if summary.reopened:
+        return "reopened"
+    return "already current"
 
 
 def _selected_searches(

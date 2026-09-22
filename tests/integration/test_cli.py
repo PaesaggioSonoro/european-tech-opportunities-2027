@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 import opportunities.cli.app as cli_app_module
 from opportunities.cli.app import app
 from opportunities.config.settings import Settings
-from opportunities.database.repository import Repository
+from opportunities.database.repository import PersistSummary, Repository
 from opportunities.database.session import create_database_engine, create_session_factory
 from opportunities.utils.paths import find_project_root
 
@@ -308,6 +308,54 @@ def test_add_job_no_render_only_updates_sqlite(tmp_path: Path) -> None:
         assert [job.linkedin_job_id for job in repository.list_open_jobs()] == ["2222222222"]
     finally:
         engine.dispose()
+
+
+@pytest.mark.parametrize(
+    ("summary", "message"),
+    [
+        (PersistSummary(new=1), "added"),
+        (PersistSummary(updated=1), "updated"),
+        (PersistSummary(reopened=1), "reopened"),
+        (PersistSummary(updated=1, reopened=1), "updated and reopened"),
+        (PersistSummary(), "already current"),
+    ],
+)
+def test_add_job_reports_exact_persistence_outcome(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    summary: PersistSummary,
+    message: str,
+) -> None:
+    repository = Mock(spec=Repository)
+    repository.upsert_manual_job.return_value = summary
+    engine = Mock(spec=Engine)
+    monkeypatch.setattr(cli_app_module, "_repository", lambda _settings: (repository, engine))
+    monkeypatch.setattr(cli_app_module, "_require_migrations", lambda _engine: None)
+
+    result = runner.invoke(
+        app,
+        [
+            "add-job",
+            "--url",
+            "https://www.linkedin.com/jobs/view/2222222222",
+            "--company",
+            "Example Technology",
+            "--title",
+            "Graduate Software Engineer 2027",
+            "--location",
+            "Berlin, Germany",
+            "--category",
+            "software-engineering",
+            "--employment-type",
+            "new-grad",
+            "--no-render",
+        ],
+        env=cli_env(tmp_path),
+    )
+
+    assert result.exit_code == 0, result.output
+    assert f"Job 2222222222 {message}." in result.output
+    engine.dispose.assert_called_once_with()
 
 
 @pytest.mark.parametrize(
